@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { assess, time, ruleVersion, type CrewEvent, type Run, type Scenario } from './core'
 import { createRun, scenarioNames } from './scenarios'
-import { listRuns, loadRun, saveRun } from './storage'
+import { listRuns, loadRun, saveRun, loadDemoSettings, saveDemoStart } from './storage'
 import { buildGroundReport } from './report'
 import { indicatorDefinitions, indicatorOf, simulatedPanel, type Indicator } from './indicators'
 import { symptomGroups, commonSymptoms } from './symptoms'
@@ -10,6 +10,8 @@ import MeasurementExplorer, { metricStates } from './MeasurementExplorer'
 import Today from './Today'
 import CrewBreak from './CrewBreak'
 import { visibleMoods, type Mood } from './breakRound'
+import DemoSetup from './DemoSetup'
+import { defaultDemoSettings, type DemoSettings } from './demoSettings'
 const GroundConnection = lazy(() => import('./GroundConnection'))
 
 type View = 'Today' | 'Measurements' | 'Self-check' | 'Handoff' | 'History' | 'Crew break'
@@ -27,6 +29,11 @@ function advance(iso: string, seconds = 5) {
 export default function App() {
   const [run, setRun] = useState<Run | null>(null)
   const [view, setView] = useState<View>('Today')
+  const [demoOpen, setDemoOpen] = useState(false)
+  const [demoSettings, setDemoSettings] = useState<DemoSettings>(defaultDemoSettings)
+  const demoToggle = useRef<HTMLButtonElement>(null)
+  const pendingSettings = useRef<DemoSettings | undefined>(undefined)
+  const initialising = useRef(false)
   const [initialMetric, setInitialMetric] = useState<Indicator>('heart_rate')
   const heading = useRef<HTMLHeadingElement>(null)
   const previousView = useRef(view)
@@ -60,16 +67,20 @@ export default function App() {
   const saving = useRef(false)
 
   async function initialise() {
+    if (initialising.current) return
+    initialising.current = true
     setError('')
     try {
+      const preferences = await loadDemoSettings()
       const stored = await loadRun()
-      const initial = stored ?? createRun('C')
-      if (!stored) await saveRun(initial)
+      const initial = preferences.resumeLastRun && stored ? stored : createRun(preferences.startupScenario)
+      if (initial !== stored) await saveRun(initial)
+      setDemoSettings(preferences)
       setRun(initial); setSavedAt('Saved on this device')
       setArchives(await listRuns())
     } catch {
       setError('Local storage could not be opened. Allow site storage, then retry.')
-    }
+    } finally { initialising.current = false }
   }
   useEffect(() => { void initialise() }, [])
   useEffect(() => {
@@ -83,12 +94,19 @@ export default function App() {
     return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update) }
   }, [])
 
-  async function commit(next: Run, retryInForm = false) {
+  async function commit(next: Run, retryInForm = false, preferences?: DemoSettings) {
     if (saving.current) return false
     saving.current = true; setBusy(true); setError(''); pending.current = retryInForm ? null : next
+    pendingSettings.current = preferences
     try {
-      await saveRun(next)
+      if (preferences) await saveDemoStart(next, preferences)
+      else await saveRun(next)
       setRun(next); pending.current = null; setSavedAt('Saved on this device')
+      pendingSettings.current = undefined
+      if (preferences) {
+        setDemoSettings(preferences); setDemoOpen(false); setView('Today'); setInitialMetric('heart_rate')
+        requestAnimationFrame(() => { heading.current?.focus({ preventScroll: true }); window.scrollTo(0, 0) })
+      }
       setArchives(current => [next, ...current.filter(item => item.id !== next.id)])
       return true
     } catch {
@@ -205,8 +223,12 @@ export default function App() {
         <div className="clock"><strong>{time(run.now)} <small>UTC</small></strong><span>Simulated mission clock</span></div>
       </div>
       {error && <div role="alert" className="error"><p>{error}</p>{pending.current &&
-        <button disabled={busy} onClick={() => void commit(pending.current!)}>Retry last action</button>}</div>}
-      <div className="demo-notice">Synthetic demonstration · {scenarioNames[run.scenario]}<span role="status">{busy ? 'Saving…' : savedAt}</span></div>
+        <button disabled={busy} onClick={() => void commit(pending.current!, false, pendingSettings.current)}>Retry last action</button>}</div>}
+      <div className="demo-notice"><span>Synthetic demonstration · {scenarioNames[run.scenario]}</span><div className="demo-status"><span role="status">{busy ? 'Saving…' : savedAt}</span>
+        <button ref={demoToggle} aria-expanded={demoOpen} aria-controls="demo-setup" onClick={() => setDemoOpen(open => !open)}>Demo setup</button></div></div>
+      {demoOpen && <DemoSetup currentScenario={run.scenario} settings={demoSettings} busy={busy}
+        onClose={() => { setDemoOpen(false); demoToggle.current?.focus() }}
+        onStart={preferences => { void commit(createRun(preferences.startupScenario), false, preferences) }} />}
 
       {view === 'Today' && <Today run={run} onReport={() => setView('Self-check')}
         onHandoff={() => setView('Handoff')} onBreak={() => setView('Crew break')}

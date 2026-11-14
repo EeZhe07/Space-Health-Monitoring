@@ -1,6 +1,7 @@
 const { chromium } = require('playwright')
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
+const { startScenario } = require('./browser-demo-helpers.cjs')
 
 async function main() {
   fs.mkdirSync('playwright-results', { recursive: true })
@@ -11,6 +12,7 @@ async function main() {
     const errors = []
     page.on('pageerror', error => errors.push(error.message))
     await page.goto('http://127.0.0.1:4173')
+    await startScenario(page)
     const clock = await page.locator('.clock strong').innerText()
     const slider = page.getByRole('slider', { name: 'Inspect heart rate history', exact: true })
     await slider.waitFor({ timeout: 5000 })
@@ -77,6 +79,7 @@ async function main() {
     const touch = await browser.newContext({ viewport: { width: 390, height: 900 }, isMobile: true, hasTouch: true })
     const touchPage = await touch.newPage()
     await touchPage.goto('http://127.0.0.1:4173')
+    await startScenario(touchPage)
     await touchPage.locator('.trend-chart .data-point').first().tap()
     await touchPage.waitForFunction(() => document.querySelector('.inspected-value')?.textContent.includes('71 bpm'), undefined, { timeout: 5000 })
     assert((await touchPage.getByRole('group', { name: 'Heart rate historical reading', exact: true }).innerText()).includes('71 bpm'))

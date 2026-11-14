@@ -1,6 +1,7 @@
 import { openDB } from 'idb'
 import type { Run } from './core'
 import type { buildGroundReport } from './report'
+import { parseDemoSettings, type DemoSettings } from './demoSettings'
 
 export interface GroundPacket {
   id: string
@@ -32,6 +33,23 @@ export async function saveRun(run: Run) {
 }
 export async function listRuns(): Promise<Run[]> {
   return (await database()).getAll('runs')
+}
+export async function loadDemoSettings() {
+  return parseDemoSettings(await (await database()).get('settings', 'demoPreferences'))
+}
+export async function saveDemoStart(run: Run, settings: DemoSettings) {
+  const db = await database()
+  const tx = db.transaction(['runs', 'settings'], 'readwrite')
+  try {
+    await tx.objectStore('runs').put(run)
+    await tx.objectStore('settings').put(run.id, 'activeRun')
+    await tx.objectStore('settings').put(settings, 'demoPreferences')
+    await tx.done
+  } catch (error) {
+    try { tx.abort() } catch { /* The failed request may already have aborted the transaction. */ }
+    await tx.done.catch(() => {})
+    throw error
+  }
 }
 export async function saveGroundPacket(packet: GroundPacket) {
   await (await database()).put('groundPackets', packet)

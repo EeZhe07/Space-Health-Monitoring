@@ -1,6 +1,7 @@
 const { chromium } = require('playwright')
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
+const { startScenario } = require('./browser-demo-helpers.cjs')
 
 async function main() {
   const browser = await chromium.launch({ channel: 'chrome', headless: true })
@@ -13,6 +14,7 @@ async function main() {
     const button = name => page.getByRole('button', { name, exact: true })
     const clock = () => page.locator('.clock strong').innerText()
     await page.goto('http://127.0.0.1:4173')
+    await startScenario(page)
     await page.getByRole('heading', { name: 'Crew status' }).waitFor()
     await page.evaluate(async () => {
       await navigator.serviceWorker.ready

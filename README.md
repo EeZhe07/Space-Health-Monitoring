@@ -22,6 +22,8 @@ Open http://127.0.0.1:4173 while online once, allow the service worker to finish
 
 ## Main flow
 
+Use **Demo setup** beside the save status to choose **Default app** or scenarios A–F. Default app contains routine synthetic readings at rest with no reported concern. **Start selected setup** starts a fresh replay and saves the startup choice locally. On reload, choose whether to resume the last saved run or start the selected preset fresh. **Restore app defaults** starts a fresh Default app and restores resume-on-reload. Existing runs stay in History; snapshots and ground-archive sign-in are retained. Existing installations initially resume their saved run.
+
 Today prioritizes the crew concern and handoff state, followed by six measurement groups. Missing or stale readings remain explicit. Measurements provides a selectable trend for every indicator, with time, context, provenance and crew-event markers. Trends break at gaps and changes of context or source. Self-check shows six common symptoms first, with more symptoms and optional details on disclosure. Handoff lets another crew member acknowledge taking over on the same tablet. History records the timeline, separate replay runs and a JSON export.
 
 Every measurement chart supports historical inspection. Hover or tap the plot to select the nearest actual reading, or use the range control and Previous/Next buttons. The range supports native keyboard navigation. Selected details remain visible after pointer exit and show value, exact UTC measured/received times, source, context, recorded quality and record ID. Inspection does not edit the episode or advance its clock; no value is fabricated between observations. Empty charts have no inspection controls.
@@ -76,6 +78,7 @@ npm run test:browser
 npm run test:cloud-browser
 npm run test:chart-browser
 npm run test:break-browser
+npm run test:demo-browser
 ```
 
 The main browser check covers symptom entry, manual measurements, acknowledgement persistence, metric trends, A-F replays, JSON export, offline reload/reopen, keyboard operation and responsive reflow. The cloud check requires a build with Supabase configuration, intercepts every Supabase request, and covers offline queue visibility, failed uploads, reconnect retries, stable IDs, lost-receipt recovery and account changes during an upload. Screenshots are written to ignored `playwright-results/`.

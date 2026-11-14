@@ -18,6 +18,9 @@ p{margin:0 0 16px;max-width:70ch}small{font-size:14px;font-weight:400}
 .page-heading{display:flex;justify-content:space-between;align-items:start;gap:24px;margin-bottom:24px}.page-heading p{color:#52636e;margin:0}
 .clock{text-align:right;white-space:nowrap}.clock strong{font-size:25px;font-weight:600}.clock span{display:block;font-size:13px;color:#52636e}
 .demo-notice{display:flex;justify-content:space-between;gap:16px;margin-bottom:20px;color:#52636e;font-size:14px}.demo-notice span{white-space:nowrap}
+.demo-status{display:flex;align-items:center;gap:16px}.demo-notice{align-items:center}.demo-setup{margin-bottom:24px}.demo-setup .panel-heading p{margin:8px 0 0;color:#52636e;font-size:15px}.setup-fields{display:grid;grid-template-columns:1fr 1fr;gap:20px 28px}.setup-fields .help{font-weight:400;margin:0}.setup-fields .button-row{grid-column:1/-1}.demo-setup>p{margin:18px 0 0}.demo-notice>span{white-space:normal}
+.setup-fields label{margin-bottom:7px}.setup-fields .help{margin-top:8px}
+@media(max-width:760px){.setup-fields{grid-template-columns:1fr}.demo-status{width:100%;justify-content:space-between}.demo-notice>span{white-space:normal}.demo-setup .panel-heading{flex-direction:row}.demo-setup .panel-heading>button{flex-shrink:0}}
 .status-strip{display:grid;grid-template-columns:1.1fr 1fr 1fr auto;align-items:center;padding:20px 24px;gap:28px;background:#fff;border:1px solid #e0e5e8;border-radius:8px;margin-bottom:24px}
 .status-strip span{display:block;color:#52636e;font-size:14px}.status-strip strong{font-size:23px;font-weight:600;display:block;text-transform:none}
 /* At 1200px, columns sum to the full canvas: (1200 - 24) * .62 + (1200 - 24) * .38 + 24. */

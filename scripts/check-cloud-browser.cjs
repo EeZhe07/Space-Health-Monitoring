@@ -2,6 +2,7 @@
 const { chromium } = require('playwright')
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
+const { startScenario } = require('./browser-demo-helpers.cjs')
 
 async function main() {
   fs.mkdirSync('playwright-results', { recursive: true })
@@ -52,6 +53,7 @@ async function main() {
     const errors = []
     page.on('pageerror', error => errors.push(error.message))
     await page.goto('http://127.0.0.1:4173')
+    await startScenario(page)
     await page.getByRole('button', { name: 'Handoff · Pending', exact: true }).click()
     await page.getByText('Ground connection and queued packets', { exact: true }).click()
     await page.getByLabel('Supabase demo account email').fill('fictional@example.test')

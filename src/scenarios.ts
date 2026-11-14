@@ -5,6 +5,7 @@ const csvFiles = import.meta.glob('../data/scenarios/*_hr.csv', { query: '?raw',
 const eventFiles = import.meta.glob('../data/scenarios/*_events.json', { eager: true, import: 'default' }) as Record<string, Record<string, unknown>[]>
 
 export const scenarioNames: Record<Scenario, string> = {
+  default: 'Default app',
   A: 'Routine recovery',
   B: 'Sensor interruption',
   C: 'Dizziness + interruption',
@@ -13,6 +14,13 @@ export const scenarioNames: Record<Scenario, string> = {
   F: 'No readings · Teammate took over',
 }
 export function createRun(scenario: Scenario): Run {
+  if (scenario === 'default') {
+    const measuredAt = '2027-07-18T14:10:00Z'
+    return { id: crypto.randomUUID(), scenario, now: '2027-07-18T14:10:10Z', events: [],
+      observations: [...simulatedPanel(measuredAt), { id: crypto.randomUUID(), indicator: 'heart_rate',
+        value: 82, unit: 'bpm', measuredAt, receivedAt: measuredAt, context: 'rest',
+        source: 'simulated_device', quality: 'ok', synthetic: true }] }
+  }
   const rawEvents = eventFiles['../data/scenarios/scenario_' + scenario + '_events.json']
   const events: CrewEvent[] = rawEvents.map(e => ({
     id: String(e.event_id), type: e.type as EventType,
