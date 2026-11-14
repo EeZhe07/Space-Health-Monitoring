@@ -8,10 +8,12 @@ import { symptomGroups, commonSymptoms } from './symptoms'
 import { lazy, Suspense } from 'react'
 import MeasurementExplorer, { metricStates } from './MeasurementExplorer'
 import Today from './Today'
+import CrewBreak from './CrewBreak'
+import { visibleMoods, type Mood } from './breakRound'
 const GroundConnection = lazy(() => import('./GroundConnection'))
 
-type View = 'Today' | 'Measurements' | 'Self-check' | 'Handoff' | 'History'
-const views: View[] = ['Today', 'Measurements', 'Self-check', 'Handoff', 'History']
+type View = 'Today' | 'Measurements' | 'Self-check' | 'Handoff' | 'History' | 'Crew break'
+const views: View[] = ['Today', 'Measurements', 'Self-check', 'Handoff', 'History', 'Crew break']
 const eventNames: Record<CrewEvent['type'], string> = {
   sensor_disconnected: 'Wrist sensor disconnected', sensor_connected: 'Wrist sensor reconnected',
   symptom_report: 'Symptom reported', symptom_updated: 'Symptom updated',
@@ -25,6 +27,16 @@ function advance(iso: string, seconds = 5) {
 export default function App() {
   const [run, setRun] = useState<Run | null>(null)
   const [view, setView] = useState<View>('Today')
+  const [initialMetric, setInitialMetric] = useState<Indicator>('heart_rate')
+  const heading = useRef<HTMLHeadingElement>(null)
+  const previousView = useRef(view)
+  useEffect(() => {
+    if (previousView.current !== view) {
+      previousView.current = view
+      heading.current?.focus({ preventScroll: true })
+      window.scrollTo(0, 0)
+    }
+  }, [view])
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [online, setOnline] = useState(navigator.onLine)
@@ -71,16 +83,16 @@ export default function App() {
     return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update) }
   }, [])
 
-  async function commit(next: Run) {
+  async function commit(next: Run, retryInForm = false) {
     if (saving.current) return false
-    saving.current = true; setBusy(true); setError(''); pending.current = next
+    saving.current = true; setBusy(true); setError(''); pending.current = retryInForm ? null : next
     try {
       await saveRun(next)
       setRun(next); pending.current = null; setSavedAt('Saved on this device')
-      setArchives(await listRuns())
+      setArchives(current => [next, ...current.filter(item => item.id !== next.id)])
       return true
     } catch {
-      setError('This action could not be saved. Your previous record is intact. Retry saving.')
+      if (!retryInForm) setError('This action could not be saved. Your previous record is intact. Retry saving.')
       return false
     } finally { saving.current = false; setBusy(false) }
   }
@@ -96,6 +108,12 @@ export default function App() {
     if (!current.assistanceRequested || current.handoff === 'acknowledged') {
       await append({ type: 'assistance_requested', actor: reporter })
     }
+  }
+  async function saveMood(mood: Mood) {
+    if (!run) return false
+    return commit({ ...run, moodCheckIns: [...(run.moodCheckIns ?? []), {
+      id: crypto.randomUUID(), at: run.now, mood,
+    }] }, true)
   }
   async function submitSymptom(e: FormEvent) {
     e.preventDefault()
@@ -158,7 +176,7 @@ export default function App() {
   const concern = result.symptoms.length > 0 || result.assistanceRequested
   const acknowledged = result.handoff === 'acknowledged'
   const title = view === 'Today' ? 'Crew status' : view === 'Measurements' ? 'Measurements' : view === 'Self-check' ? 'Report how you feel' :
-    view === 'Handoff' ? 'Onboard handoff' : 'Episode history'
+    view === 'Handoff' ? 'Onboard handoff' : view === 'Crew break' ? 'Crew break' : 'Episode history'
   const narrative = result.symptoms.length ? 'A crew member reported feeling unwell.' :
     result.assistanceRequested ? 'A crew member has requested assistance.' :
     result.sensor === 'disconnected' ? 'The wrist sensor has stopped updating.' : 'No symptoms have been reported.'
@@ -178,12 +196,12 @@ export default function App() {
       <button className="assistance" onClick={() => void requestAssistance()} disabled={busy}>Request assistance</button>
     </header>
     <nav aria-label="Main navigation">{views.map(v => <button key={v} aria-current={view === v ? 'page' : undefined}
-      onClick={() => setView(v)}>{v}{v === 'Handoff' && concern && !acknowledged ? ' · Pending' : ''}</button>)}</nav>
+      onClick={() => { if (v === 'Measurements') setInitialMetric('heart_rate'); setView(v) }}>{v}{v === 'Handoff' && concern && !acknowledged ? ' · Pending' : ''}</button>)}</nav>
     <main>
-      <div className="page-heading"><div><h1>{title}</h1><p>{view === 'Today' ? narrative :
+      <div className="page-heading"><div><h1 ref={heading} tabIndex={-1}>{title}</h1><p>{view === 'Today' ? narrative :
         view === 'Measurements' ? 'Available readings, their times and what needs review.' :
         view === 'Self-check' ? 'Your report stays visible alongside device measurements.' :
-        view === 'Handoff' ? 'Pass this tablet to an onboard teammate.' : 'Measurements, crew reports and recorded actions.'}</p></div>
+        view === 'Handoff' ? 'Pass this tablet to an onboard teammate.' : view === 'Crew break' ? 'Take a short break or record how you feel. Both are optional.' : 'Measurements, crew reports and recorded actions.'}</p></div>
         <div className="clock"><strong>{time(run.now)} <small>UTC</small></strong><span>Simulated mission clock</span></div>
       </div>
       {error && <div role="alert" className="error"><p>{error}</p>{pending.current &&
@@ -191,8 +209,10 @@ export default function App() {
       <div className="demo-notice">Synthetic demonstration · {scenarioNames[run.scenario]}<span role="status">{busy ? 'Saving…' : savedAt}</span></div>
 
       {view === 'Today' && <Today run={run} onReport={() => setView('Self-check')}
-        onHandoff={() => setView('Handoff')} onMeasurements={() => setView('Measurements')} />}
-      {view === 'Measurements' && <MeasurementExplorer run={run} onRecord={indicator => {
+        onHandoff={() => setView('Handoff')} onBreak={() => setView('Crew break')}
+        onMeasurements={indicator => { setInitialMetric(indicator ?? 'heart_rate'); setView('Measurements') }} />}
+      {view === 'Crew break' && <CrewBreak key={run.id} run={run} busy={busy} saveMood={saveMood} goBack={() => setView('Today')} />}
+      {view === 'Measurements' && <MeasurementExplorer run={run} initialMetric={initialMetric} onRecord={indicator => {
         setMeasurementKind(indicator.endsWith('_bp') ? 'blood_pressure' : indicator)
         setMeasurement(''); setDiastolic(''); setMeasurementOpen(true); setView('Self-check')
       }} />}
@@ -284,6 +304,10 @@ export default function App() {
       </div>}
 
       {view === 'History' && <>
+        {visibleMoods(run).length > 0 && <details className="panel mood-history"><summary>Mood check-ins · This tablet only ({visibleMoods(run).length})</summary>
+          <p className="help">CM-2’s own words for this replay. Excluded from ground reports.</p>
+          <ul>{visibleMoods(run).map(entry => <li key={entry.id}><time dateTime={entry.at}>{time(entry.at)} UTC</time> · {entry.mood}</li>)}</ul>
+        </details>}
         <div className="workspace">
           <section className="panel"><div className="panel-heading"><h2>Event timeline</h2><span>UTC · Current replay</span></div>
             {result.events.length ? <ol className="timeline">{result.events.map(event => <li key={event.id}>

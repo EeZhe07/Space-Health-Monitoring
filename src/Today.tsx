@@ -1,9 +1,10 @@
 import { assess, time, type Run } from './core'
 import { metricStates } from './MeasurementExplorer'
 import TrendChart from './TrendChart'
+import type { Indicator } from './indicators'
 
-export default function Today({ run, onReport, onHandoff, onMeasurements }: {
-  run: Run; onReport: () => void; onHandoff: () => void; onMeasurements: () => void
+export default function Today({ run, onReport, onHandoff, onMeasurements, onBreak }: {
+  run: Run; onReport: () => void; onHandoff: () => void; onMeasurements: (indicator?: Indicator) => void; onBreak: () => void
 }) {
   const result = assess(run)
   const concern = result.symptoms.length > 0 || result.assistanceRequested
@@ -26,7 +27,7 @@ export default function Today({ run, onReport, onHandoff, onMeasurements }: {
       </div>
     </section>
     <section className="panel overview-panel">
-      <div className="panel-heading"><h2>Latest measurements</h2><button onClick={onMeasurements}>
+      <div className="panel-heading"><h2>Latest measurements</h2><button onClick={() => onMeasurements(result.metrics.find(m => m.state === 'review')?.indicator)}>
         {reviewCount ? reviewCount + ' readings to review' : 'View measurements'}</button></div>
       <div className="overview-readings status-strip">{otherMetrics.map(metric => {
         const lower = result.metrics.find(item => item.indicator === 'diastolic_bp')!
@@ -53,15 +54,9 @@ export default function Today({ run, onReport, onHandoff, onMeasurements }: {
         <div className="chart-note">{result.last ? 'Last reliable reading: ' + result.last.value + ' bpm at ' +
           time(result.last.measuredAt) + ' UTC · ' + result.last.context.replaceAll('_', ' ') : 'No measurement has been received in this scenario.'}</div>
       </section>
-      <section className="panel next-actions"><h2>Next steps</h2>
-        {concern ? <><p>{acknowledged ? 'Add follow-up observations in the handoff record.' : 'Let a teammate review the crew report and confirm taking over.'}</p>
-          <button onClick={onHandoff}>Review handoff card</button></> :
-          <><p>Report any new discomfort. Earlier measurements stay available for context.</p><button onClick={onReport}>Start self-check</button></>}
-        <div className="next-step"><h3>{result.available ? 'Measurement available' : 'Current heart rate unknown'}</h3>
-          <p>{result.available ? 'Keep measurement context in mind when reviewing the trend.' :
-            result.last ? 'The previous reading is historical. A fresh measurement can add information.' :
-            'No heart-rate measurement is available. You can still request assistance.'}</p>
-          <button onClick={onMeasurements}>Review available measurements</button></div>
+      <section className="panel next-actions"><h2>Optional crew break</h2>
+        <p>Play a short matching game or log your mood on this tablet.</p>
+        <button onClick={onBreak}>Open crew break</button>
       </section>
     </div>
   </>

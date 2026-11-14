@@ -7,8 +7,8 @@ export const metricStates = {
   missing: 'Not measured', stale: 'Needs updating', context_needed: 'Context differs',
   within_reference: 'Within reference', review: 'Review reading', recorded: 'Recorded',
 }
-export default function MeasurementExplorer({ run, onRecord }: { run: Run; onRecord: (indicator: Indicator) => void }) {
-  const [selected, setSelected] = useState<Indicator>('heart_rate')
+export default function MeasurementExplorer({ run, initialMetric, onRecord }: { run: Run; initialMetric: Indicator; onRecord: (indicator: Indicator) => void }) {
+  const [selected, setSelected] = useState<Indicator>(initialMetric)
   const result = assess(run)
   const metric = result.metrics.find(item => item.indicator === selected)!
   return <div className="measurement-explorer">

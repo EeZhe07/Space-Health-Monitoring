@@ -30,6 +30,7 @@ export interface CrewEvent {
   severity?: 'mild' | 'moderate' | 'severe' | 'unsure'
 }
 export interface Run {
+  moodCheckIns?: import('./breakRound').MoodCheckIn[]
   id: string
   scenario: Scenario
   now: string

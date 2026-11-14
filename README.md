@@ -56,7 +56,9 @@ Demo controls load scenarios A-F, move the simulated clock, disconnect or reconn
 - `src/content.ts` provides bundled source explanations and official reference links.
 - `scripts/build-offline.mjs` precaches the production assets.
 
-The two-minute heart-rate validity window and other indicator freshness windows are illustrative settings. The prototype supports measurement review and onboard coordination. Clinical diagnosis, treatment protocols, real device adapters, mission connectivity and distinct-user ground-team permissions need separate work. Only fictional records should be entered in the public demo. Gamified check-ins remain a future design discussion.
+The two-minute heart-rate validity window and other indicator freshness windows are illustrative settings. The prototype supports measurement review and onboard coordination. Clinical diagnosis, treatment protocols, real device adapters, mission connectivity and distinct-user ground-team permissions need separate work. Only fictional records should be entered in the public demo.
+
+**Crew break:** Pick two tiles at a time to find three pairs, or use the mood check-in directly. Starting, ending and completing rounds do not write health data. An explicitly saved mood stays in the replay on this shared tablet and appears in History as of the replay clock. Ground exports and Supabase packets exclude these entries. No database migration or network connection is needed after the app is cached.
 
 Records are scoped to this browser and website origin. Clearing site data removes them; export JSON to keep a copy. Browser storage is not an access-control system. Crew IDs in the interface identify simulated participants without authenticating them.
 
@@ -73,6 +75,7 @@ With Chrome installed and the production preview running on port 4173:
 npm run test:browser
 npm run test:cloud-browser
 npm run test:chart-browser
+npm run test:break-browser
 ```
 
 The main browser check covers symptom entry, manual measurements, acknowledgement persistence, metric trends, A-F replays, JSON export, offline reload/reopen, keyboard operation and responsive reflow. The cloud check requires a build with Supabase configuration, intercepts every Supabase request, and covers offline queue visibility, failed uploads, reconnect retries, stable IDs, lost-receipt recovery and account changes during an upload. Screenshots are written to ignored `playwright-results/`.

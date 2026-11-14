@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:browser": "node scripts/check-browser.cjs",
     "test:cloud-browser": "node scripts/check-cloud-browser.cjs",
-    "test:chart-browser": "node scripts/check-chart-browser.cjs"
+    "test:chart-browser": "node scripts/check-chart-browser.cjs",
+    "test:break-browser": "node scripts/check-break-browser.cjs"
   },
   "dependencies": {
     "@fontsource/source-sans-3": "^5.3.1",

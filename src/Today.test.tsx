@@ -9,7 +9,7 @@ describe('overview blood-pressure interpretation', () => {
     const run: Run = { id: 'test', scenario: 'A', now, events: [],
       observations: simulatedPanel('2027-07-18T14:08:00Z').map(reading =>
         reading.indicator === 'diastolic_bp' ? { ...reading, value: diastolic } : reading) }
-    const html = renderToStaticMarkup(<Today run={run} onReport={() => {}} onHandoff={() => {}} onMeasurements={() => {}} />)
+    const html = renderToStaticMarkup(<Today run={run} onReport={() => {}} onHandoff={() => {}} onMeasurements={() => {}} onBreak={() => {}} />)
     return html.split('<span>Blood pressure</span>')[1].split('</div>')[0]
   }
   it('requests review when only diastolic pressure is outside the comparison', () => {
