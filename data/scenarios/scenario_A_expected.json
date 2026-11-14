@@ -1,0 +1,34 @@
+{
+  "crew_id": "CM-2",
+  "mission_day": 140,
+  "evaluated_at": "2027-07-18T14:10:00Z",
+  "rule_version": "0.1-demo",
+  "symptom_status": "none_open",
+  "open_symptoms": [],
+  "current_hr": {
+    "status": "current",
+    "last_reliable": {
+      "value": 82,
+      "unit": "bpm",
+      "measured_at": "2027-07-18T14:10:00Z",
+      "context": "post_exercise"
+    }
+  },
+  "sensor": "connected",
+  "unknowns": [],
+  "actions_taken": [],
+  "assistance": "available",
+  "handoff": {
+    "status": "not_needed",
+    "by": null,
+    "at": null
+  },
+  "reasons": [],
+  "contributing_ids": [
+    "A-REC-009"
+  ],
+  "labels": [
+    "synthetic data",
+    "illustrative demo rules"
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "crew_id": "CM-2",
+  "mission_day": 140,
+  "evaluated_at": "2027-07-18T14:10:00Z",
+  "rule_version": "0.1-demo",
+  "symptom_status": "none_open",
+  "open_symptoms": [],
+  "current_hr": {
+    "status": "unknown",
+    "last_reliable": null
+  },
+  "sensor": "no_data",
+  "unknowns": [
+    "current heart rate"
+  ],
+  "actions_taken": [
+    "assistance requested at 14:09"
+  ],
+  "assistance": "available",
+  "handoff": {
+    "status": "pending",
+    "by": null,
+    "at": null
+  },
+  "reasons": [
+    "No reliable heart rate data available.",
+    "Assistance was requested; the handoff card opens immediately."
+  ],
+  "contributing_ids": [
+    "EV-140-001"
+  ],
+  "labels": [
+    "synthetic data",
+    "illustrative demo rules"
+  ]
+}
