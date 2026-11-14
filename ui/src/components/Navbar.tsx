@@ -3,6 +3,7 @@ import { Check, ChevronDown, Infinity, Menu, Pause, Sparkles, X } from "lucide-r
 import { go, type Route } from "@/lib/router";
 import { useStore } from "@/lib/store";
 import { environments, formatDelay } from "@/lib/environments";
+import { indicatorList } from "@/lib/indicators";
 import { cn } from "@/lib/utils";
 
 type NavLink = { label: string; route?: Route; dropdown?: { label: string; route: Route; detail: string }[] };
@@ -47,7 +48,19 @@ export function Navbar({ route, dockedLogo = false }: { route: Route; dockedLogo
   const [envOpen, setEnvOpen] = useState(false);
   const vitalsRef = useDismiss(vitalsOpen, () => setVitalsOpen(false));
   const envRef = useDismiss(envOpen, () => setEnvOpen(false));
-  const { env, setEnv, motionPref, setMotionPref } = useStore();
+  const { env, setEnv, motionPref, setMotionPref, dueToday, levelOf } = useStore();
+  const actCount = indicatorList.filter((i) => levelOf(i.id) === "act").length;
+  const activeIndex = Math.max(0, navLinks.findIndex((l) => isActive(l, route)));
+  // Flag the tab bar while the glider travels, so CSS can play its stretch.
+  const [moving, setMoving] = useState(false);
+  const prevIndex = useRef(activeIndex);
+  useEffect(() => {
+    if (prevIndex.current === activeIndex) return;
+    prevIndex.current = activeIndex;
+    setMoving(true);
+    const t = setTimeout(() => setMoving(false), 560);
+    return () => clearTimeout(t);
+  }, [activeIndex]);
   const motionOn = motionPref === "full";
   const toggleMotion = () => setMotionPref(motionOn ? "reduced" : "full");
 
@@ -67,25 +80,32 @@ export function Navbar({ route, dockedLogo = false }: { route: Route; dockedLogo
           <span>Crew Health</span>
         </a>
 
-        <div className="liquid-glass hidden md:flex items-center gap-1 rounded-xl px-2 py-2 !overflow-visible">
-          {navLinks.map((l) =>
-            l.dropdown ? (
+        {/* Tab bar (style from Uiverse.io by Pradeepsaranbishnoi): a glider slides behind the active tab. */}
+        <div className="nav-tabs hidden md:flex" data-moving={moving ? "" : undefined} style={{ ["--active" as string]: activeIndex }}>
+          <span className="nav-glider" aria-hidden />
+          {navLinks.map((l, i) => {
+            const on = i === activeIndex;
+            const badge = l.label === "Routine" ? dueToday.length : l.label === "Vitals" ? actCount : 0;
+            const badgeEl = badge > 0 && (
+              <span className="nav-notification" aria-label={l.label === "Routine" ? `${badge} check-ins due` : `${badge} need action`}>
+                {badge}
+              </span>
+            );
+            return l.dropdown ? (
               <div key={l.label} ref={vitalsRef} className="relative">
                 <button
                   type="button"
                   aria-expanded={vitalsOpen}
                   aria-haspopup="true"
                   onClick={() => setVitalsOpen((o) => !o)}
-                  className={cn(
-                    "flex items-center gap-0.5 px-3 py-1.5 rounded-md text-sm transition-colors",
-                    isActive(l, route) ? "bg-white/15 text-white" : "text-white/70 hover:text-white",
-                  )}
+                  className={cn("nav-tab", on && "is-active")}
                 >
                   {l.label}
-                  <ChevronDown size={13} className={cn("mt-px transition-transform", vitalsOpen && "rotate-180")} aria-hidden />
+                  <ChevronDown size={12} className={cn("ml-0.5 transition-transform", vitalsOpen && "rotate-180")} aria-hidden />
+                  {badgeEl}
                 </button>
                 {vitalsOpen && (
-                  <div className="liquid-glass absolute left-1/2 top-[calc(100%+12px)] w-64 -translate-x-1/2 rounded-xl p-1.5 bg-black/40">
+                  <div className="liquid-glass absolute left-1/2 top-[calc(100%+18px)] w-64 -translate-x-1/2 rounded-xl p-1.5 bg-black/60">
                     {l.dropdown.map((d) => (
                       <a
                         key={d.route}
@@ -94,7 +114,7 @@ export function Navbar({ route, dockedLogo = false }: { route: Route; dockedLogo
                         aria-current={route === d.route ? "page" : undefined}
                         className={cn("block rounded-lg px-3 py-2.5 transition-colors", route === d.route ? "bg-white/15" : "hover:bg-white/10")}
                       >
-                        <span className="block text-sm font-black text-white">{d.label}</span>
+                        <span className="block text-sm font-semibold text-white">{d.label}</span>
                         <span className="block text-xs text-white/60">{d.detail}</span>
                       </a>
                     ))}
@@ -102,19 +122,12 @@ export function Navbar({ route, dockedLogo = false }: { route: Route; dockedLogo
                 )}
               </div>
             ) : (
-              <a
-                key={l.label}
-                href={l.route === "home" ? "#/" : `#/${l.route}`}
-                aria-current={isActive(l, route) ? "page" : undefined}
-                className={cn(
-                  "flex items-center gap-0.5 px-3 py-1.5 rounded-md text-sm transition-colors",
-                  isActive(l, route) ? "bg-white/15 text-white" : "text-white/70 hover:text-white",
-                )}
-              >
+              <a key={l.label} href={l.route === "home" ? "#/" : `#/${l.route}`} aria-current={on ? "page" : undefined} className={cn("nav-tab", on && "is-active")}>
                 {l.label}
+                {badgeEl}
               </a>
-            ),
-          )}
+            );
+          })}
         </div>
 
         <div className="hidden md:flex items-center gap-3">
@@ -142,7 +155,7 @@ export function Navbar({ route, dockedLogo = false }: { route: Route; dockedLogo
             </button>
             {envOpen && <EnvMenu onPick={() => setEnvOpen(false)} className="absolute right-0 top-[calc(100%+10px)] w-72" />}
           </div>
-          <button type="button" onClick={() => go("routine")} className="bg-white text-black text-sm font-black px-4 py-2.5 rounded-full hover:bg-white/90 transition-colors">
+          <button type="button" onClick={() => go("routine")} className="bg-white text-black text-sm font-semibold px-4 py-2.5 rounded-full hover:bg-white/90 transition-colors">
             Begin check-in
           </button>
         </div>
@@ -214,10 +227,10 @@ export function Navbar({ route, dockedLogo = false }: { route: Route; dockedLogo
             </span>
           </button>
           <div className="flex gap-2 mt-2 pt-3 border-t border-white/10">
-            <button type="button" onClick={() => navigate("guide")} className="flex-1 liquid-glass text-white text-sm font-black px-4 py-2.5 rounded-full hover:bg-white/5 transition-colors">
+            <button type="button" onClick={() => navigate("guide")} className="flex-1 liquid-glass text-white text-sm font-semibold px-4 py-2.5 rounded-full hover:bg-white/5 transition-colors">
               Guide
             </button>
-            <button type="button" onClick={() => navigate("routine")} className="flex-1 bg-white text-black text-sm font-black px-4 py-2.5 rounded-full hover:bg-white/90 transition-colors">
+            <button type="button" onClick={() => navigate("routine")} className="flex-1 bg-white text-black text-sm font-semibold px-4 py-2.5 rounded-full hover:bg-white/90 transition-colors">
               Begin check-in
             </button>
           </div>

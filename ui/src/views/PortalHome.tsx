@@ -38,7 +38,11 @@ function retrigger(el: Element, cls: string) {
   el.classList.add(cls);
 }
 
-export function PortalHome() {
+export function PortalHome({ active = true }: { active?: boolean }) {
+  const activeRef = useRef(active);
+  activeRef.current = active;
+  const activateRef = useRef<(on: boolean) => void>(() => {});
+  useEffect(() => activateRef.current(active), [active]);
   const { env, levelOf, latest, dueToday, streak, level } = useStore();
   const root = useRef<HTMLElement>(null);
   const [progress, setProgress] = useState(0); // 0..1 while holding, for the readout
@@ -76,6 +80,8 @@ export function PortalHome() {
     let alive = true;
     let ready = false; // portal revealed and interactive
     let entering = false;
+    let flash = 0; // bright ring pulse at 100%
+    let booted = false;
     let rotX = 0, rotY = 0, targetX = 0, targetY = 0;
     let expansion = 0, maskScale = 0;
     let hold = 0; // 0..1
@@ -134,6 +140,13 @@ export function PortalHome() {
       rotY += (targetY - rotY) * Math.min(1, dt * 0.009);
 
       // Hold progress fills while pressed and drains quickly when released.
+      if (!activeRef.current) {
+        // Home is hidden behind another page: idle cheaply until it comes back.
+        last = now;
+        requestAnimationFrame(draw);
+        return;
+      }
+      flash = Math.max(0, flash - dt / 700);
       if (!entering) {
         const before = hold;
         hold = holding ? Math.min(1, hold + rawDt / HOLD_MS) : Math.max(0, hold - rawDt / 450);
@@ -182,11 +195,11 @@ export function PortalHome() {
           const target = lens[lens.length - 1] * hold;
           ctx.save();
           ctx.globalAlpha = 1 - e;
-          ctx.lineWidth = 3;
+          ctx.lineWidth = 3 + 5 * flash;
           ctx.lineCap = "round";
           ctx.strokeStyle = "#ffffff";
           ctx.shadowColor = "rgba(127, 245, 230, 0.9)";
-          ctx.shadowBlur = 18;
+          ctx.shadowBlur = 18 + 30 * flash;
           ctx.beginPath();
           ctx.moveTo(ring[0][0], ring[0][1]);
           for (let i = 1; i < ring.length; i++) {
@@ -287,9 +300,16 @@ export function PortalHome() {
       setLabel("Entering");
       targetX = targetY = 0;
       navigator.vibrate?.(30);
-      exp.classList.add("is-entering");
-      if (!skip && !reduce) await animateValue((v) => (expansion = v), 950);
-      await wait(120);
+      flash = 1;
+      if (!skip && !reduce) {
+        // 1. the ring flashes and the heading reads "Pulse synced"
+        await wait(420);
+        // 2. the chrome blurs away and the window opens to fill the screen
+        exp.classList.add("is-entering");
+        await animateValue((v) => (expansion = v), 1300);
+        await wait(180);
+      } else exp.classList.add("is-entering");
+      // 3. Home fades out over the vitals page (see .home-layer in App)
       go("overview");
     }
     exp.addEventListener("crew-enter", () => enter(true));
@@ -374,11 +394,44 @@ export function PortalHome() {
 
     const bg = exp.querySelector<HTMLVideoElement>(".background")!;
     bg.loop = true;
-    bg.play().catch(() => {});
+    function boot() {
+      if (booted) return;
+      booted = true;
+      bg.play().catch(() => {});
+      runPreloader();
+    }
+    activateRef.current = (on: boolean) => {
+      if (!on) {
+        // Leaving Home: keep everything loaded but stop the videos.
+        bg.pause();
+        portalVideo.pause();
+        preVideo.pause();
+        cursor.classList.remove("is-visible", "is-enter", "is-holding");
+        holding = false;
+        return;
+      }
+      if (!booted) return boot();
+      // Back on Home: reset the portal and reveal it again.
+      bg.play().catch(() => {});
+      portalVideo.play().catch(() => {});
+      entering = false;
+      hold = 0;
+      flash = 0;
+      expansion = 0;
+      targetX = targetY = 0;
+      setProgress(0);
+      setPhase("idle");
+      setLabel("Hold to enter");
+      exp.classList.remove("is-entering");
+      if (ready) {
+        revealMask();
+        retrigger(exp, "content-revealing");
+      }
+    };
     resizeCanvas();
     requestAnimationFrame(draw);
     requestAnimationFrame(cursorLoop);
-    runPreloader();
+    if (activeRef.current) boot();
 
     return () => {
       alive = false;
@@ -417,7 +470,7 @@ export function PortalHome() {
       <canvas id="portal-canvas" className="portal-canvas" aria-hidden="true" />
       <section className="portal-wrap chrome" aria-label="Enter Crew Health">
         <div className="portal-heading">
-          <SwapText text={phase === "entering" ? "Opening your vitals" : phase === "holding" ? "Syncing your pulse" : "Hold to enter"} />
+          <SwapText text={phase === "entering" ? (progress >= 1 ? "Pulse synced" : "Opening your vitals") : phase === "holding" ? "Syncing your pulse" : "Hold to enter"} />
           <strong className="tabular relative inline-grid overflow-hidden">
             <AnimatePresence mode="popLayout" initial={false}>
               <motion.span

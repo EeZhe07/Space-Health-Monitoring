@@ -207,11 +207,11 @@ export function BodyMap() {
           </div>
           <dl className="grid gap-4 sm:grid-cols-2 text-sm leading-relaxed">
             <div>
-              <dt className="font-black">What it does</dt>
+              <dt className="font-semibold">What it does</dt>
               <dd className="mt-1 text-white/70">{region.does}</dd>
             </div>
             <div>
-              <dt className="font-black">In space</dt>
+              <dt className="font-semibold">In space</dt>
               <dd className="mt-1 text-white/70">{region.inSpace}</dd>
             </div>
           </dl>

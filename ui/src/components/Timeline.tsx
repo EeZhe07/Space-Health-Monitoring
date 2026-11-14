@@ -255,7 +255,7 @@ export function Timeline({
         </svg>
 
         {/* playhead time chip */}
-        <div className="pointer-events-none absolute -translate-x-1/2 rounded-full bg-white px-2 py-0.5 text-xs font-black text-black tabular" style={{ left: x(playhead), top: M.top - 30 }}>
+        <div className="pointer-events-none absolute -translate-x-1/2 rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-black tabular" style={{ left: x(playhead), top: M.top - 30 }}>
           {hhmm(new Date(playhead).toISOString())}
         </div>
 

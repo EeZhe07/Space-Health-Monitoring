@@ -23,9 +23,7 @@ export default function App() {
   return (
     <MotionConfig reducedMotion={motionPref === "reduced" ? "always" : "never"}>
       <div className={cn("relative w-full", isHome ? "h-screen overflow-hidden" : "min-h-screen")}>
-        {isHome ? (
-          <PortalHome key={motionPref} />
-        ) : (
+        {!isHome && (
           <>
             <SpaceScene dim />
             <Navbar route={route} />
@@ -42,6 +40,10 @@ export default function App() {
             </AnimatePresence>
           </>
         )}
+        {/* Home stays mounted (videos stay loaded) and crossfades with the other pages. */}
+        <div className={cn("home-layer", !isHome && "is-hidden")} inert={!isHome}>
+          <PortalHome key={motionPref} active={isHome} />
+        </div>
       </div>
     </MotionConfig>
   );

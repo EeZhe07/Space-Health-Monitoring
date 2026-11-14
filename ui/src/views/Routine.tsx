@@ -49,11 +49,14 @@ export function Routine() {
                     type="button"
                     onClick={() => setActive(ind.id)}
                     aria-current={active === ind.id ? "step" : undefined}
-                    className={cn("flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors", active === ind.id ? "bg-white/15" : "hover:bg-white/8")}
+                    className={cn("relative isolate flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors", active !== ind.id && "hover:bg-white/8")}
                   >
+                    {active === ind.id && (
+                      <motion.span layoutId="active-check" className="absolute inset-0 -z-10 rounded-xl bg-white/15" transition={{ type: "spring", stiffness: 420, damping: 34 }} aria-hidden />
+                    )}
                     <motion.span key={String(isDone)} initial={isDone ? { scale: 0.4 } : false} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 520, damping: 18 }} className={cn("grid size-6 shrink-0 place-items-center rounded-full", isDone ? "bg-white text-black" : "border border-white/40")}>{isDone && <Check size={14} aria-hidden />}</motion.span>
                     <span className="min-w-0 flex-1">
-                      <span className={cn("block text-sm font-black tracking-tight", isDone && "text-white/60 line-through decoration-white/30")}>{ind.name}</span>
+                      <span className={cn("block text-sm font-semibold", isDone && "text-white/60 line-through decoration-white/30")}>{ind.name}</span>
                       <span className="flex items-center gap-1 text-xs text-white/55">
                         <Clock size={11} aria-hidden /> {ind.scheduleHint}
                       </span>
@@ -72,7 +75,7 @@ export function Routine() {
               >
                 <motion.span key={String(exercised)} initial={exercised ? { scale: 0.4 } : false} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 520, damping: 18 }} className={cn("grid size-6 shrink-0 place-items-center rounded-full", exercised ? "bg-white text-black" : "border border-white/40")}>{exercised && <Check size={14} aria-hidden />}</motion.span>
                 <span className="flex-1">
-                  <span className={cn("block text-sm font-black tracking-tight", exercised && "text-white/60 line-through decoration-white/30")}>Exercise, about 2 hours</span>
+                  <span className={cn("block text-sm font-semibold", exercised && "text-white/60 line-through decoration-white/30")}>Exercise, about 2 hours</span>
                   <span className="flex items-center gap-1 text-xs text-white/55">
                     <Dumbbell size={11} aria-hidden /> Keeps bones and muscles strong
                   </span>
@@ -83,7 +86,19 @@ export function Routine() {
         </section>
 
         {/* Log a measurement */}
-        <LogForm key={active} id={active} onDone={() => setActive(s.dueToday.find((d) => d !== active) ?? active)} />
+        <section className="panel overflow-hidden p-6 sm:p-7" aria-labelledby="log-title">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={active}
+              initial={{ opacity: 0, y: 18, filter: "blur(8px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: -12, filter: "blur(6px)", transition: { duration: 0.18 } }}
+              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <LogForm id={active} onDone={() => setActive(s.dueToday.find((d) => d !== active) ?? active)} />
+            </motion.div>
+          </AnimatePresence>
+        </section>
 
         {/* Gamification */}
         <Progress />
@@ -114,14 +129,14 @@ function LogForm({ id, onDone }: { id: IndicatorId; onDone: () => void }) {
   }
 
   return (
-    <section className="panel p-6 sm:p-7" aria-labelledby="log-title">
+    <div>
       <AnimatePresence mode="wait" initial={false}>
         {result ? (
           <motion.div key="result" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex flex-col gap-5" role="status">
             <div className="relative flex items-center gap-2 text-sm text-white/70">
               <Sparkles size={16} aria-hidden /> Logged.
               <motion.span
-                className="rounded-full bg-white px-2.5 py-0.5 text-xs font-black text-black"
+                className="rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-black"
                 initial={{ opacity: 0, y: 14, scale: 0.6 }}
                 animate={{ opacity: [0, 1, 1], y: [14, -4, 0], scale: [0.6, 1.15, 1] }}
                 transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
@@ -136,17 +151,17 @@ function LogForm({ id, onDone }: { id: IndicatorId; onDone: () => void }) {
               <LevelBadge level={ind.level(result)} />
             </div>
             <div className={cn("rounded-2xl p-4", levelMeta[ind.level(result)].bg)}>
-              <p className={cn("text-sm font-black", levelMeta[ind.level(result)].text)}>What to do now</p>
+              <p className={cn("text-sm font-semibold", levelMeta[ind.level(result)].text)}>What to do now</p>
               <p className="mt-1 text-sm leading-relaxed">{ind.todo[ind.level(result)]}</p>
               <div className="mt-3">
                 <Escalate id={id} level={ind.level(result)} />
               </div>
             </div>
             <div className="flex flex-wrap gap-3">
-              <button type="button" onClick={onDone} className="bg-white text-black text-sm font-black px-5 py-2.5 rounded-full hover:bg-white/90 transition-colors">
+              <button type="button" onClick={onDone} className="bg-white text-black text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-white/90 transition-colors">
                 Next check-in
               </button>
-              <button type="button" onClick={() => setResult(null)} className="liquid-glass text-white text-sm font-black px-5 py-2.5 rounded-full hover:bg-white/5 transition-colors">
+              <button type="button" onClick={() => setResult(null)} className="liquid-glass text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-white/5 transition-colors">
                 Log another
               </button>
             </div>
@@ -159,16 +174,22 @@ function LogForm({ id, onDone }: { id: IndicatorId; onDone: () => void }) {
             </div>
             <ol className="flex flex-col gap-3">
               {ind.howTo.map((step, i) => (
-                <li key={step} className="flex gap-3 text-sm leading-relaxed">
+                <motion.li
+                  key={step}
+                  className="flex gap-3 text-sm leading-relaxed"
+                  initial={{ opacity: 0, x: 14 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.4, delay: 0.15 + i * 0.08, ease: [0.22, 1, 0.36, 1] }}
+                >
                   <span className="grid size-6 shrink-0 place-items-center rounded-full bg-white/12 text-xs font-medium">{i + 1}</span>
                   <span className="text-white/85">{step}</span>
-                </li>
+                </motion.li>
               ))}
             </ol>
 
             {id === "mood" ? (
               <fieldset>
-                <legend className="text-sm font-black">How have you felt today?</legend>
+                <legend className="text-sm font-semibold">How have you felt today?</legend>
                 <div className="mt-3 grid grid-cols-5 gap-2">
                   {MOODS.map((m, i) => (
                     <button
@@ -215,7 +236,7 @@ function LogForm({ id, onDone }: { id: IndicatorId; onDone: () => void }) {
               </p>
             )}
             <div>
-              <button type="submit" className="bg-white text-black text-sm sm:text-base font-black px-6 py-3 rounded-full hover:bg-white/90 transition-colors">
+              <button type="submit" className="bg-white text-black text-sm sm:text-base font-semibold px-6 py-3 rounded-full hover:bg-white/90 transition-colors">
                 Save reading
               </button>
               <p className="mt-3 text-xs text-white/50">You'll see right away whether it's steady and what to do next.</p>
@@ -223,7 +244,7 @@ function LogForm({ id, onDone }: { id: IndicatorId; onDone: () => void }) {
           </motion.form>
         )}
       </AnimatePresence>
-    </section>
+    </div>
   );
 }
 

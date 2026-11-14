@@ -1,17 +1,33 @@
-import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { motionOff } from "./motion";
+import Particles from "./Particles/Particles";
 
 /**
  * Animated background drawn in code (replaces the stock video):
  * a teal-and-violet planet with swirling clouds, two light beams crossing
- * behind it, a twinkling starfield, and a spacesuit glove reaching up toward
+ * behind it, a 3D particle starfield, and a spacesuit glove reaching up toward
  * the planet. Decorative only. Motion stops when reduced motion is requested.
  */
 export function SpaceScene({ dim = false }: { dim?: boolean }) {
   return (
     <div aria-hidden className="space-scene fixed inset-0 overflow-hidden">
-      <Stars />
+      {/* 3D starfield (React Bits Particles): parallax on hover, light ripple on click */}
+      <div className="absolute inset-0">
+        <Particles
+          particleColors={["#ffffff", "#ffffff", "#7ff5e6", "#b48cff", "#9fbaff"]}
+          particleCount={380}
+          particleSpread={12}
+          speed={0.08}
+          particleBaseSize={120}
+          sizeRandomness={1}
+          glow={0.6}
+          twinkle={0.5}
+          cameraDistance={22}
+          moveParticlesOnHover
+          hoverEffect="parallax"
+          particleHoverFactor={0.8}
+          clickBurst
+        />
+      </div>
       <div className="beam beam-teal" />
       <div className="beam beam-violet" />
       <div className="planet-wrap">
@@ -26,46 +42,6 @@ export function SpaceScene({ dim = false }: { dim?: boolean }) {
       <div className={cn("absolute inset-0 transition-colors duration-500", dim ? "bg-gradient-to-b from-black/65 via-black/50 to-black/75" : "bg-gradient-to-t from-black/55 via-transparent to-black/20")} />
     </div>
   );
-}
-
-function Stars() {
-  const ref = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const c = ref.current!;
-    const ctx = c.getContext("2d")!;
-    const reduce = motionOff();
-    let seed = 11;
-    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-    const stars = Array.from({ length: 260 }, () => ({ x: rnd(), y: rnd(), r: 0.3 + rnd() * 1.3, p: rnd() * Math.PI * 2, s: 0.4 + rnd() * 1.4, hue: rnd() < 0.2 ? (rnd() < 0.5 ? 175 : 265) : 220 }));
-    let raf = 0;
-    const size = () => {
-      const dpr = Math.min(2, devicePixelRatio || 1);
-      c.width = innerWidth * dpr;
-      c.height = innerHeight * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-    const draw = (t: number) => {
-      ctx.clearRect(0, 0, innerWidth, innerHeight);
-      for (const s of stars) {
-        const a = reduce ? 0.7 : 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t / 1000 * s.s + s.p));
-        const x = ((s.x * innerWidth + (reduce ? 0 : t * 0.004 * s.r)) % innerWidth);
-        ctx.fillStyle = `hsla(${s.hue}, 90%, 88%, ${a})`;
-        ctx.beginPath();
-        ctx.arc(x, s.y * innerHeight, s.r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      if (!reduce) raf = requestAnimationFrame(draw);
-    };
-    size();
-    draw(0);
-    if (!reduce) raf = requestAnimationFrame(draw);
-    addEventListener("resize", size);
-    return () => {
-      cancelAnimationFrame(raf);
-      removeEventListener("resize", size);
-    };
-  }, []);
-  return <canvas ref={ref} className="absolute inset-0 h-full w-full" />;
 }
 
 /** EVA glove and sleeve, index finger reaching up. */

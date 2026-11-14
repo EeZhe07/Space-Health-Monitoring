@@ -30,7 +30,7 @@ export function Guide() {
           {hazards.map((h) => (
             <li key={h.name} className="panel p-5">
               <h.icon size={22} strokeWidth={1.6} aria-hidden />
-              <h3 className="mt-3 font-black">{h.name}</h3>
+              <h3 className="mt-3 font-bold">{h.name}</h3>
               <p className="mt-2 text-sm leading-relaxed text-white/70">{h.text}</p>
               {h.affects.length > 0 && (
                 <p className="mt-3 text-xs text-white/55">
@@ -59,7 +59,7 @@ export function Guide() {
                       className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
                     >
                       <span>
-                        <span className="block font-black">{ind.name}</span>
+                        <span className="block font-semibold">{ind.name}</span>
                         <span className="block text-sm text-white/60">
                           Steady {ind.band[0]}–{ind.band[1]} {ind.unit}, {ind.scheduleHint.toLowerCase()}
                         </span>
@@ -71,7 +71,7 @@ export function Guide() {
                     <div id={`ref-${ind.id}`} className="grid gap-6 border-t border-white/10 px-5 py-5 md:grid-cols-2">
                       <Explainer id={ind.id} />
                       <div className="flex flex-col gap-3">
-                        <p className="text-sm font-black">What each colour means for you</p>
+                        <p className="text-sm font-semibold">What each colour means for you</p>
                         {(["steady", "watch", "act"] as Level[]).map((l) => (
                           <div key={l} className={cn("rounded-xl p-3 text-sm", levelMeta[l].bg)}>
                             <span className={cn("font-medium", levelMeta[l].text)}>{levelMeta[l].label}. </span>
@@ -95,15 +95,15 @@ export function Guide() {
             <h2 id="when-title" className="text-lg font-black">When to bring someone in</h2>
             <dl className="mt-4 flex flex-col gap-4 text-sm leading-relaxed">
               <div>
-                <dt className="font-black text-steady">Handle it yourself</dt>
+                <dt className="font-semibold text-steady">Handle it yourself</dt>
                 <dd className="text-white/70">Steady readings, or a single watch reading you can re-check soon.</dd>
               </div>
               <div>
-                <dt className="font-black text-watch">Tell a crewmate</dt>
+                <dt className="font-semibold text-watch">Tell a crewmate</dt>
                 <dd className="text-white/70">Any symptom, a missing reading you can't take, or watch readings that keep repeating. The Live check handoff alerts the crew.</dd>
               </div>
               <div>
-                <dt className="font-black text-act">Message the flight surgeon</dt>
+                <dt className="font-semibold text-act">Message the flight surgeon</dt>
                 <dd className="text-white/70">An act-now reading that doesn't settle after you re-check. On Mars, act on crew protocol first: the reply can take over 20 minutes.</dd>
               </div>
             </dl>

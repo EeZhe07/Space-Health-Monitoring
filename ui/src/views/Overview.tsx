@@ -55,7 +55,7 @@ export function Overview() {
                   className={cn("panel w-full p-5 text-left transition-[background-color,box-shadow] hover:bg-white/5 hover:shadow-[0_18px_40px_-18px_rgb(127_224_168/35%)]", on && "!bg-white/12 ring-1 ring-white/40")}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <span className="text-sm font-black tracking-tight text-white">{ind.name}</span>
+                    <span className="text-sm font-semibold text-white">{ind.name}</span>
                     <LevelBadge level={lvl} />
                   </div>
                   <p className="mt-3 tabular">
@@ -91,7 +91,7 @@ function Stat({ icon: Icon, label, value }: { icon: typeof Globe2; label: string
         <Icon size={14} aria-hidden />
         {label}
       </div>
-      <div className="mt-0.5 font-black">{value}</div>
+      <div className="mt-0.5 font-semibold">{value}</div>
     </div>
   );
 }

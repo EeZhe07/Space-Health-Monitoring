@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { motion } from "motion/react";
 import { AnimatedNumber, BeatingHeart, EcgTrace, SplitText } from "./motion";
-import ParticleText from "./ParticleText/ParticleText";
 import { AlertTriangle, CheckCircle2, Eye, MessageSquareShare, Send, Users } from "lucide-react";
 import { indicators, levelMeta, type IndicatorId, type Level, type Reading } from "@/lib/indicators";
 import { useNow, useStore } from "@/lib/store";
@@ -14,32 +13,9 @@ export function Page({ title, intro, aside, children }: { title: string; intro: 
     <main className="relative z-10 mx-auto max-w-[1320px] px-4 sm:px-8 pt-28 pb-16">
       <header className="mb-8 flex flex-wrap items-end justify-between gap-6">
         <div>
-          <h1 className="sr-only">{title}</h1>
-          {/* Particle title: gathers in, scatters from the cursor, bursts on click. */}
-          <div aria-hidden className="h-[clamp(56px,7vw,92px)] w-[min(86vw,860px)] -ml-0.5 text-white">
-            <ParticleText
-              text={title}
-              align="left"
-              fontSize="clamp(2.25rem, 5.2vw, 4rem)"
-              fontWeight={900}
-              fontFamily="Inter"
-              particleSize={1.5}
-              density={2}
-              maxParticles={9000}
-              color="#ffffff"
-              highlightColor="#7ff5e6"
-              intro="gather"
-              scatter={90}
-              gatherDuration={1300}
-              stagger={360}
-              pointerRepel={22}
-              repelRadius={70}
-              idleDrift={0.25}
-              trigger="hover"
-              glow
-              className="!min-h-0"
-            />
-          </div>
+          <h1 className="text-white text-3xl sm:text-4xl lg:text-6xl font-black leading-[1.04] tracking-[-0.04em]">
+            <SplitText text={title} delay={0.08} stagger={0.06} />
+          </h1>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/70">
             <SplitText text={intro} delay={0.35} stagger={0.015} />
           </p>
@@ -105,7 +81,7 @@ export function Escalate({ id, level }: { id: IndicatorId; level: Level | null }
   if (!who) return null;
   if (who === "crewmate") {
     return (
-      <button type="button" onClick={() => go("live")} className="liquid-glass inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-black text-white hover:bg-white/5 transition-colors">
+      <button type="button" onClick={() => go("live")} className="liquid-glass inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/5 transition-colors">
         <Users size={16} aria-hidden /> Tell a crewmate
       </button>
     );
@@ -125,7 +101,7 @@ export function Escalate({ id, level }: { id: IndicatorId; level: Level | null }
     <button
       type="button"
       onClick={() => sendMessage(id, `${indicators[id].name}: ${r ? indicators[id].format(r) : "?"} ${indicators[id].unit} (${levelMeta[level].label})`)}
-      className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-black text-black hover:bg-white/90 transition-colors"
+      className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-black hover:bg-white/90 transition-colors"
     >
       <MessageSquareShare size={16} aria-hidden /> Message flight surgeon
       <span className="text-black/60">· {formatDelay(env.delaySec)} delay</span>
@@ -158,7 +134,7 @@ export function IndicatorDetail({ id, compact = false }: { id: IndicatorId; comp
       {id === "heart_rate" && r && <HeartStrip bpm={r.value} />}
       {level && (
         <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }} className={cn("rounded-2xl p-4", levelMeta[level].bg)}>
-          <p className={cn("text-sm font-black", levelMeta[level].text)}>What to do now</p>
+          <p className={cn("text-sm font-semibold", levelMeta[level].text)}>What to do now</p>
           <p className="mt-1 text-sm leading-relaxed text-white/90">{ind.todo[level]}</p>
           <div className="mt-3">
             <Escalate id={id} level={level} />
@@ -175,7 +151,7 @@ export function Explainer({ id }: { id: IndicatorId }) {
   return (
     <dl className="grid gap-4 text-sm leading-relaxed">
       <div>
-        <dt className="font-black">How to measure</dt>
+        <dt className="font-semibold">How to measure</dt>
         <dd className="mt-1 text-white/70">
           <ol className="list-decimal pl-5 space-y-1">
             {ind.howTo.map((s) => (
@@ -185,11 +161,11 @@ export function Explainer({ id }: { id: IndicatorId }) {
         </dd>
       </div>
       <div>
-        <dt className="font-black">Why it matters</dt>
+        <dt className="font-semibold">Why it matters</dt>
         <dd className="mt-1 text-white/70">{ind.why}</dd>
       </div>
       <div>
-        <dt className="font-black">In space</dt>
+        <dt className="font-semibold">In space</dt>
         <dd className="mt-1 text-white/70">{ind.inSpace}</dd>
       </div>
     </dl>
