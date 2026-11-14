@@ -24,6 +24,8 @@ Open http://127.0.0.1:4173 while online once, allow the service worker to finish
 
 Today prioritizes the crew concern and handoff state, followed by six measurement groups. Missing or stale readings remain explicit. Measurements provides a selectable trend for every indicator, with time, context, provenance and crew-event markers. Trends break at gaps and changes of context or source. Self-check shows six common symptoms first, with more symptoms and optional details on disclosure. Handoff lets another crew member acknowledge taking over on the same tablet. History records the timeline, separate replay runs and a JSON export.
 
+Every measurement chart supports historical inspection. Hover or tap the plot to select the nearest actual reading, or use the range control and Previous/Next buttons. The range supports native keyboard navigation. Selected details remain visible after pointer exit and show value, exact UTC measured/received times, source, context, recorded quality and record ID. Inspection does not edit the episode or advance its clock; no value is fabricated between observations. Empty charts have no inspection controls.
+
 Handoff findings and subsequent teammate updates are saved as events. Handoff and History include a ground-review packet preview and JSON export combining reports, received reliable observations, event history, assessment reasons and relevant research references. Reference material is kept out of Today. Optional authenticated Supabase storage archives immutable snapshots. The packet snapshot excludes measurements and events later than the current replay time.
 
 ## Expanded measurements
@@ -70,8 +72,11 @@ With Chrome installed and the production preview running on port 4173:
 ```sh
 npm run test:browser
 npm run test:cloud-browser
+npm run test:chart-browser
 ```
 
 The main browser check covers symptom entry, manual measurements, acknowledgement persistence, metric trends, A-F replays, JSON export, offline reload/reopen, keyboard operation and responsive reflow. The cloud check requires a build with Supabase configuration, intercepts every Supabase request, and covers offline queue visibility, failed uploads, reconnect retries, stable IDs, lost-receipt recovery and account changes during an upload. Screenshots are written to ignored `playwright-results/`.
+
+The chart check covers pointer and touch inspection, range and step controls, all seven indicator charts, exact timestamps, selection reset, replay rewind, empty charts, clock isolation and phone overflow.
 
 Product and visual decisions are in `PRODUCT.md` and `DESIGN.md`. Research references are available inside the application. Implementation, documentation and checks were prepared with AI assistance.
