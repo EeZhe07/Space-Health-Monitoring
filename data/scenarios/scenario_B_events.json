@@ -1,0 +1,10 @@
+[
+  {
+    "event_id": "EV-140-001",
+    "crew_id": "CM-2",
+    "type": "sensor_disconnected",
+    "time": "2027-07-18T14:06:30Z",
+    "source": "simulated_device",
+    "synthetic": true
+  }
+]
