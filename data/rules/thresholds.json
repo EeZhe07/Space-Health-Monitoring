@@ -1,0 +1,50 @@
+{
+  "resting_hr_reference": {
+    "description": "How the astronaut's personal normal resting HR is calculated",
+    "indicator": "heart_rate",
+    "context": "resting",
+    "window_days": [
+      1,
+      14
+    ],
+    "method": "median",
+    "min_valid_readings": 7,
+    "evidence": "demo setting (team plan)"
+  },
+  "resting_hr_change_flag": {
+    "description": "Flag if today's resting HR is this much above the personal reference",
+    "indicator": "heart_rate",
+    "context": "resting",
+    "flag_if_above_percent": 15,
+    "evidence": "demo setting"
+  },
+  "exercise_hr_zone": {
+    "description": "Expected HR range during aerobic exercise (70-85% of age-predicted max HR)",
+    "indicator": "heart_rate",
+    "context": "exercise",
+    "age_years": 46,
+    "max_hr_formula": "220 - age",
+    "zone_percent_of_max": [
+      70,
+      85
+    ],
+    "zone_bpm": [
+      122,
+      148
+    ],
+    "evidence": "NASA-sourced: ISS aerobic exercise 30-40 min at 70-85% HRmax (NTRS 20090013286); 220-age formula (NTRS 20070023931)"
+  },
+  "hr_validity_window": {
+    "description": "A reading older than this is no longer treated as current",
+    "indicator": "heart_rate",
+    "minutes": 2,
+    "evidence": "demo setting"
+  },
+  "exercise_hr_above_zone": {
+    "description": "Flag if exercise HR exceeds the top of exercise_hr_zone",
+    "indicator": "heart_rate",
+    "context": "exercise",
+    "uses": "exercise_hr_zone.zone_bpm[1]",
+    "evidence": "demo setting, based on the NASA zone upper limit"
+  }
+}
