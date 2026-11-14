@@ -28,25 +28,27 @@ Open http://localhost:5173.
   Titles reveal word by word and labels cross-fade. Animation is on by default;
   the pause button in the navbar (or "Reduce motion" in the mobile menu) turns
   it off and is remembered.
-- **Vitals → Overview**: all seven indicators (heart rate, blood pressure, blood
+- **Status**: all seven indicators (heart rate, blood pressure, blood
   sugar, temperature, sleep, mood, radiation) colour-coded steady / watch / act,
   with what to do now and a flight-surgeon message that shows the comms delay.
-- **Vitals → Body map**: clickable figure; each region shows what it does, how
+- **Emergency button** (always in the navbar): one tap opens an instant
+  emergency screen that alerts the crew, sends the latest vitals to the flight
+  surgeon with the comms delay shown, and gives step-by-step prompts for injury,
+  chest pain, an unconscious crewmate, fire or a radiation storm.
+- **Patterns, unknowns, prevention**: Status shows pattern alerts and marks
+  readings "Unknown" when a sensor is offline; Plan has a prevention plan that
+  adds countermeasures from your patterns.
+- **Body map**: clickable figure; each region shows what it does, how
   spaceflight affects it and its latest readings.
-- **Vitals → Trends**: 30 mission days per indicator with the steady band shaded.
-- **Vitals → Live check**: the team's heart-rate scenarios (validity window,
-  sensor drops, symptoms, crew handoff) replayed minute by minute.
-- **Daily check-in** (Routine): the evening mood check-in and exercise; sensor
-  readings can be entered by hand only if a sensor is offline. Also XP and streak, plus a
-  holographic **Crew card** (React Bits HoloCard) drawn from live data: readiness
-  score, heart rate, the indicator to focus on, weakness/strength, ground delay.
-  The foil gets rarer as the streak grows (glitter → stars → cosmos → rainbow) and
-  turns gold when every check-in is done. Select it to flip; "View large" opens it
-  full screen. Badges are a collectible set of holo cards (locked ones are plain).
-  Card art is drawn in `src/lib/cardArt.ts`; the component is in
-  `src/components/HoloCard/`.
+- **Trends**: 30 mission days per indicator with the steady band shaded.
+- **Live check**: the team's heart-rate scenarios (validity window, sensor drops,
+  symptoms, crew handoff) replayed minute by minute.
+- **Plan**: nothing to enter. What synced from each sensor, the prevention plan,
+  **Sensor health** (connection, battery and last sync for each suit sensor, with
+  low-battery warnings and reconnect), and your level and streak.
 - **Guide**: the five hazards of spaceflight and how to measure each indicator.
-- **Environment switcher** (navbar): station, spacecraft, rover, Moon or Mars base.
+- **Settings** (gear in the navbar): mission environment (station, spacecraft,
+  rover, Moon or Mars base) and the animation switch.
 
 See [FEATURES.md](FEATURES.md) for how each feature maps to the challenge brief.
 Entries you log are kept in the browser's localStorage; use *Reset demo* on the

@@ -9,7 +9,7 @@ import Particles from "./Particles/Particles";
  */
 export function SpaceScene({ dim = false }: { dim?: boolean }) {
   return (
-    <div aria-hidden className="space-scene fixed inset-0 overflow-hidden">
+    <div aria-hidden className={cn("space-scene fixed inset-0 overflow-hidden", dim && "space-scene--dim")}>
       {/* 3D starfield (React Bits Particles): parallax on hover, light ripple on click */}
       <div className="absolute inset-0">
         <Particles

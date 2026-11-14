@@ -9,6 +9,7 @@ import { Routine } from "@/views/Routine";
 import { Guide } from "@/views/Guide";
 import { SpaceScene } from "@/components/SpaceScene";
 import { useStore } from "@/lib/store";
+import { EmergencyScreen } from "@/components/Emergency";
 
 // The first page is the health status dashboard (no welcome page).
 const views = { home: Overview, overview: Overview, body: BodyMap, trends: Trends, live: LiveCheck, routine: Routine, guide: Guide };
@@ -26,14 +27,15 @@ export default function App() {
         <AnimatePresence mode="wait">
           <motion.div
             key={route === "home" ? "overview" : route}
-            initial={{ opacity: 0, y: 14, filter: "blur(8px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, y: -8, filter: "blur(6px)", transition: { duration: 0.18 } }}
-            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, transition: { duration: 0.08 } }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
           >
             {View && <View />}
           </motion.div>
         </AnimatePresence>
+        <EmergencyScreen />
       </div>
     </MotionConfig>
   );

@@ -1,7 +1,6 @@
 // Synthetic mission history for CM-2, mission days 111–140, matching the team's
 // scenarios (mission day 140 = 2027-07-18). Seeded, so it's identical on every load.
-// Sensor readings arrive automatically (no manual entry needed); only the evening
-// mood check-in is self-reported.
+// Every reading arrives automatically; nothing is entered by hand.
 // Story: sleep slips over the last week, mood follows, a solar event spikes
 // radiation on day 133, and blood pressure creeps up slightly.
 
@@ -12,6 +11,9 @@ export const FIRST_DAY = 111;
 const DAY0 = Date.parse("2027-07-18T00:00:00Z") - TODAY * 86_400_000;
 
 export const dayToIso = (day: number, hour: number) => new Date(DAY0 + day * 86_400_000 + hour * 3_600_000).toISOString();
+
+/** "Now" in the demo: ship time on mission day 140, matching the team's Live check scenarios. */
+export const NOW_ISO = new Date(DAY0 + TODAY * 86_400_000 + (14 + 10 / 60) * 3_600_000).toISOString();
 
 function rng(seed: number) {
   return () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -33,8 +35,8 @@ export function syntheticHistory(): Reading[] {
     push("temperature", d, 7.5, d === 124 ? 37.6 : n(36.7, 0.25));
     // Dosimeter reports a running total; today's value so far.
     push("radiation", d, d === TODAY ? 7.6 : 22, d === 133 ? 1.62 : d === 134 ? 0.96 : n(0.48, 0.07));
-    // Mood is the one self-reported check-in; today's is due this evening.
-    if (d !== TODAY) push("mood", d, 20, Math.round(Math.min(5, Math.max(1, n(4.4 - late * 0.22, 0.5)))));
+    // Mood is estimated from heart-rate variability and sleep; nothing is self-reported.
+    push("mood", d, d === TODAY ? 6.5 : 20, Math.round(Math.min(5, Math.max(1, n(4.4 - late * 0.22, 0.5)))));
   }
   return out;
 }

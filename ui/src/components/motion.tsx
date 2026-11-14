@@ -90,11 +90,11 @@ export function EcgTrace({ bpm, className, color = "currentColor" }: { bpm: numb
 /** Staggered entrance for lists of cards. */
 export const listVariants: Variants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.06, delayChildren: 0.05 } },
+  show: { transition: { staggerChildren: 0.025, delayChildren: 0 } },
 };
 export const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 16, filter: "blur(6px)" },
-  show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const } },
+  hidden: { opacity: 0, y: 8 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] as const } },
 };
 
 const softEase = [0.22, 1, 0.36, 1] as const;
@@ -135,7 +135,7 @@ export function SplitText({
             className="inline-block will-change-transform"
             initial={reduce ? false : { opacity: 0, y: "0.45em", filter: "blur(10px)" }}
             animate={show ? { opacity: 1, y: "0em", filter: "blur(0px)" } : { opacity: 0, y: "0.45em", filter: "blur(10px)" }}
-            transition={{ duration: by === "char" ? 0.9 : 0.7, ease: softEase, delay: show ? delay + n * step : 0 }}
+            transition={{ duration: by === "char" ? 0.5 : 0.4, ease: softEase, delay: show ? delay + n * step : 0 }}
           >
             {p}
           </motion.span>
