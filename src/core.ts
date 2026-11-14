@@ -1,4 +1,4 @@
-export type Scenario = 'A' | 'B' | 'C' | 'D'
+export type Scenario = 'A' | 'B' | 'C' | 'D' | 'E' | 'F'
 export type EventType = 'sensor_disconnected' | 'sensor_connected' | 'symptom_report' |
   'symptom_updated' | 'assistance_requested' | 'handoff_acknowledged' | 'handoff_note' | 'measurement_recorded'
 

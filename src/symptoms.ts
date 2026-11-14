@@ -4,3 +4,4 @@ export const symptomGroups = [
   { name: 'Stomach and hydration', symptoms: ['Nausea', 'Vomiting', 'Abdominal pain', 'Diarrhea', 'Difficulty urinating'] },
   { name: 'General and recovery', symptoms: ['Fatigue', 'Feeling feverish', 'Muscle or joint pain', 'Skin irritation', 'Trouble sleeping', 'Another concern'] },
 ]
+export const commonSymptoms = ['Dizziness', 'Headache', 'Nausea', 'Shortness of breath', 'Fatigue', 'Feeling feverish']

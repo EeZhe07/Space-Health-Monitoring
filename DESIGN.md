@@ -1,3 +1,5 @@
 # Crew Health interface
 
 Operate mode. A flat white working surface on a pale cool ground, dark navy ink, Source Sans 3, and restrained teal for the main chart and actions. Amber signals attention and text always states the meaning. No decorative images or entrance animations. Touch targets at least 44px. A compact top navigation replaces a sidebar to favour tablet use. The signature element is the joint timeline of measurement context and crew events. The screen answers: what do we know now, what is unknown, and who has taken over?
+
+Today places the human concern before the measurement overview. A single primary action opens reporting or handoff. The measurement explorer has a selector and one detailed trend, rather than seven competing charts. Common symptoms use large checkbox targets; additional symptoms, notes and manual readings are disclosed on demand. Unknown, historical, context-dependent and comparison states use explicit text. Detailed research and technical JSON belong in the ground-review flow.

@@ -4,15 +4,14 @@ import { createRun, scenarioNames } from './scenarios'
 import { listRuns, loadRun, saveRun } from './storage'
 import { buildGroundReport } from './report'
 import { indicatorDefinitions, indicatorOf, simulatedPanel, type Indicator } from './indicators'
-import { symptomGroups } from './symptoms'
-import GroundConnection from './GroundConnection'
+import { symptomGroups, commonSymptoms } from './symptoms'
+import { lazy, Suspense } from 'react'
+import MeasurementExplorer, { metricStates } from './MeasurementExplorer'
+import Today from './Today'
+const GroundConnection = lazy(() => import('./GroundConnection'))
 
 type View = 'Today' | 'Measurements' | 'Self-check' | 'Handoff' | 'History'
 const views: View[] = ['Today', 'Measurements', 'Self-check', 'Handoff', 'History']
-const metricStates = {
-  missing: 'Not measured', stale: 'Needs updating', context_needed: 'Context differs',
-  within_reference: 'Within reference', review: 'Review reading', recorded: 'Recorded',
-}
 const eventNames: Record<CrewEvent['type'], string> = {
   sensor_disconnected: 'Wrist sensor disconnected', sensor_connected: 'Wrist sensor reconnected',
   symptom_report: 'Symptom reported', symptom_updated: 'Symptom updated',
@@ -23,47 +22,6 @@ const eventNames: Record<CrewEvent['type'], string> = {
 function advance(iso: string, seconds = 5) {
   return new Date(Date.parse(iso) + seconds * 1000).toISOString()
 }
-function Chart({ run }: { run: Run }) {
-  const result = assess(run)
-  const figure = useRef<HTMLElement>(null)
-  const [width, setWidth] = useState(640)
-  useEffect(() => {
-    if (!figure.current) return
-    const observer = new ResizeObserver(entries => setWidth(Math.max(280, entries[0].contentRect.width)))
-    observer.observe(figure.current)
-    return () => observer.disconnect()
-  }, [])
-  const start = Date.parse('2027-07-18T13:30:00Z')
-  const end = Math.max(Date.parse(run.now), start + 60000)
-  const plotWidth = width - 64
-  const minimum = Math.min(40, ...result.observations.map(o => Math.floor(o.value / 20) * 20))
-  const maximum = Math.max(180, ...result.observations.map(o => Math.ceil(o.value / 20) * 20))
-  const x = (iso: string) => 44 + ((Date.parse(iso) - start) / (end - start)) * plotWidth
-  const y = (value: number) => 184 - ((value - minimum) / (maximum - minimum)) * 150
-  const segments: string[][] = [[]]
-  result.observations.forEach((o, i, all) => {
-    if (i && Date.parse(o.measuredAt) - Date.parse(all[i - 1].measuredAt) > 120000) segments.push([])
-    segments.at(-1)!.push(x(o.measuredAt) + ',' + y(o.value))
-  })
-  return <figure className="chart" ref={figure}>
-    {!result.observations.length ? <div className="empty-chart">No reliable readings received</div> :
-    <svg viewBox={'0 0 ' + width + ' 230'} role="img" aria-label="Recorded heart rate over mission time in UTC. Gaps indicate unavailable measurements.">
-      {[0, 1, 2, 3].map(i => Math.round((minimum + (maximum - minimum) * i / 3) / 20) * 20).map(tick => <g key={tick}>
-        <line x1="44" y1={y(tick)} x2={width - 20} y2={y(tick)} className="gridline" />
-        <text x="30" y={y(tick) + 4} textAnchor="end">{tick}</text>
-      </g>)}
-      {segments.map((points, i) => <polyline key={i} points={points.join(' ')} className="data-line" />)}
-      {result.last && <circle cx={x(result.last.measuredAt)} cy={y(result.last.value)} r="4" className="data-point" />}
-      {[0, 0.5, 1].map(f => <text key={f} x={44 + f * plotWidth} y="216" textAnchor={f === 0 ? 'start' : f === 1 ? 'end' : 'middle'}>
-        {time(new Date(start + f * (end - start)).toISOString())}
-      </text>)}
-      <text x="5" y="18">bpm</text>
-    </svg>}
-    <figcaption>Mission time (UTC) · {result.observations.length} received readings · {
-      result.observations.some(o => o.source === 'manual') ? 'Includes manual entries' : 'Simulated device'}</figcaption>
-  </figure>
-}
-
 export default function App() {
   const [run, setRun] = useState<Run | null>(null)
   const [view, setView] = useState<View>('Today')
@@ -75,7 +33,7 @@ export default function App() {
   const [reset, setReset] = useState(false)
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([])
   const [severity, setSeverity] = useState<'mild' | 'moderate' | 'severe' | 'unsure'>('unsure')
-  const [onset, setOnset] = useState('now')
+  const [onset, setOnset] = useState('uncertain')
   const [note, setNote] = useState('')
   const [reporter, setReporter] = useState('CM-2')
   const [actor, setActor] = useState('CM-1')
@@ -83,7 +41,8 @@ export default function App() {
   const [measurement, setMeasurement] = useState('')
   const [measurementKind, setMeasurementKind] = useState<Indicator | 'blood_pressure'>('heart_rate')
   const [diastolic, setDiastolic] = useState('')
-  const [context, setContext] = useState('post_exercise')
+  const [measurementOpen, setMeasurementOpen] = useState(false)
+  const [context, setContext] = useState('unspecified')
   const [replaySeconds, setReplaySeconds] = useState<number | null>(null)
   const pending = useRef<Run | null>(null)
   const saving = useRef(false)
@@ -102,9 +61,9 @@ export default function App() {
   }
   useEffect(() => { void initialise() }, [])
   useEffect(() => {
-    setSelectedSymptoms([]); setSeverity('unsure'); setOnset('now'); setNote(''); setReporter('CM-2')
-    setActor('CM-1'); setMeasurement(''); setContext('post_exercise'); setReplaySeconds(null)
-    setReset(false); setHandoffNote(''); setMeasurementKind('heart_rate'); setDiastolic('')
+    setSelectedSymptoms([]); setSeverity('unsure'); setOnset('uncertain'); setNote(''); setReporter('CM-2')
+    setActor('CM-1'); setMeasurement(''); setContext('unspecified'); setReplaySeconds(null)
+    setReset(false); setHandoffNote(''); setMeasurementKind('heart_rate'); setDiastolic(''); setMeasurementOpen(false)
   }, [run?.id])
   useEffect(() => {
     const update = () => setOnline(navigator.onLine)
@@ -153,7 +112,7 @@ export default function App() {
       description: note.trim() || symptom + ' reported',
     }))
     if (await commit({ ...run, now, events: [...run.events, ...reports] })) {
-      setView('Handoff'); setNote('')
+      setView('Handoff'); setNote(''); setSelectedSymptoms([]); setSeverity('unsure'); setOnset('uncertain')
     }
   }
   async function recordMeasurement(e: FormEvent) {
@@ -180,7 +139,7 @@ export default function App() {
     if (await commit({ ...run, now, observations: [...run.observations, ...observations],
       events: [...run.events, { id: crypto.randomUUID(), at: now, type: 'measurement_recorded',
         actor: reporter, description: (measurementKind === 'blood_pressure' ? value + '/' + diastolic : value) +
-          ' ' + definition.unit + ' · ' + context.replaceAll('_', ' ') }] })) {
+          ' ' + definition.unit + ' · ' + (measurementKind === 'sleep_duration' ? 'previous sleep period' : context.replaceAll('_', ' ')) }] })) {
       setMeasurement(''); setDiastolic('')
     }
   }
@@ -204,7 +163,6 @@ export default function App() {
     result.assistanceRequested ? 'A crew member has requested assistance.' :
     result.sensor === 'disconnected' ? 'The wrist sensor has stopped updating.' : 'No symptoms have been reported.'
   const episodeTime = result.events.find(e => e.type === 'symptom_report' || e.type === 'assistance_requested')?.at
-  const reviewCount = result.metrics.filter(metric => metric.state === 'review').length
   const summary = <div className="facts">
     <div><span>Reported symptoms</span><strong>{result.symptoms.length ? result.symptoms.map(s => s.symptom).join(', ') : 'None reported'}</strong></div>
     <div><span>Current heart rate</span><strong>{result.available ? result.last!.value + ' bpm' : 'Unknown'}</strong></div>
@@ -230,72 +188,48 @@ export default function App() {
       </div>
       {error && <div role="alert" className="error"><p>{error}</p>{pending.current &&
         <button disabled={busy} onClick={() => void commit(pending.current!)}>Retry last action</button>}</div>}
-      <div className="demo-notice">Synthetic demonstration · {scenarioNames[run.scenario]}<span>{busy ? 'Saving…' : savedAt}</span></div>
+      <div className="demo-notice">Synthetic demonstration · {scenarioNames[run.scenario]}<span role="status">{busy ? 'Saving…' : savedAt}</span></div>
 
-      {view === 'Today' && <>
-        <div className="status-strip">
-          <div><span>Current heart rate</span><strong>{result.available ? result.last!.value : 'Unknown'}{result.available && <small> bpm</small>}</strong></div>
-          <div><span>Wrist sensor</span><strong>{result.sensor.replaceAll('_', ' ')}</strong></div>
-          <div><span>Crew report</span><strong>{result.symptoms.length ? 'Open concern' : 'None reported'}</strong></div>
-          <button className="primary" onClick={() => setView('Self-check')}>Report a symptom</button>
-        </div>
-        <div className="workspace">
-          <section className="panel"><div className="panel-heading"><h2>Heart-rate record</h2><span>Exercise and recovery</span></div>
-            <Chart run={run} /><div className="chart-note">{result.last ? 'Last reliable reading: ' + result.last.value + ' bpm at ' +
-              time(result.last.measuredAt) + ' UTC · ' + result.last.context.replaceAll('_', ' ') : 'No measurement has been received in this scenario.'}</div>
-          </section>
-          <section className="panel"><h2>What needs attention</h2>
-            <p className={concern ? 'attention' : ''}>{narrative}</p>
-            {result.symptoms.map(s => <div className="report" key={s.id}><strong>{s.description}</strong>
-              <p>Reported {time(s.at)} UTC by {s.actor}. Onset {s.onset ? 'about ' + time(s.onset) + ' UTC' : 'uncertain'}.</p></div>)}
-            <p>{result.available ? 'A recent reading is available. No configured health diagnosis is produced.' :
-              result.last ? 'Current heart rate is unknown. Earlier measurements remain available for context.' :
-              'No heart-rate measurement is available. You can still report a concern or request assistance.'}</p>
-            <button onClick={() => setView(concern ? 'Handoff' : 'Self-check')}>{concern ? 'Open handoff' : 'Start self-check'}</button>
-          </section>
-        </div>
-        <section className="panel guidance"><h2>Before the next step</h2><p>{concern ?
-          'An onboard teammate can review your report now. A new reading can add information; it does not close your concern.' :
-          'Report how you feel whenever you need to. Assistance remains available even when no measurements are present.'}</p>
-          <div className="button-row"><button onClick={() => setView('Handoff')}>Review handoff card</button><button onClick={() => setView('History')}>View timeline</button></div>
-          <p className="measurement-link"><button onClick={() => setView('Measurements')}>View all measurements{reviewCount ? ' · ' + reviewCount + ' to review' : ''}</button></p>
-        </section>
-      </>}
-
-      {view === 'Measurements' && <section className="panel">
-        <div className="panel-heading"><h2>Available measurements</h2><button onClick={() => setView('Self-check')}>Record a measurement</button></div>
-        <p className="help">Values are synthetic. Reference comparisons use a general-adult illustration; detailed sources and limitations accompany the ground-review packet.</p>
-        <div className="measurement-list">{result.metrics.map(metric => <div className="measurement-row" key={metric.indicator}>
-          <div><strong>{metric.name}</strong><span>{metric.last ? time(metric.last.measuredAt) + ' UTC · ' +
-            metric.last.context.replaceAll('_', ' ') : 'Awaiting a measurement'}</span></div>
-          <strong>{metric.last ? metric.last.value + ' ' + metric.unit : '—'}</strong>
-          <div><strong className={metric.state === 'review' ? 'attention' : ''}>{metricStates[metric.state]}</strong><span>{metric.reason}</span></div>
-        </div>)}</div>
-        <div className="button-row"><button onClick={() => setView('Self-check')}>Report a symptom</button><button onClick={() => setView('Handoff')}>Review handoff</button></div>
-      </section>}
+      {view === 'Today' && <Today run={run} onReport={() => setView('Self-check')}
+        onHandoff={() => setView('Handoff')} onMeasurements={() => setView('Measurements')} />}
+      {view === 'Measurements' && <MeasurementExplorer run={run} onRecord={indicator => {
+        setMeasurementKind(indicator.endsWith('_bp') ? 'blood_pressure' : indicator)
+        setMeasurement(''); setDiastolic(''); setMeasurementOpen(true); setView('Self-check')
+      }} />}
 
       {view === 'Self-check' && <div className="workspace">
         <section className="panel"><h2>Your report</h2><form onSubmit={submitSymptom}>
-          <label>Who is reporting?<select value={reporter} onChange={e => setReporter(e.target.value)}><option value="CM-2">CM-2 · Reporting for myself</option><option value="CM-1">CM-1 · Reporting for CM-2</option></select></label>
           <fieldset><legend>What are you experiencing?</legend><p className="help">Select all that apply. You can request assistance at any time.</p>
+            <div className="common-symptoms">{commonSymptoms.map(symptom => <label className="symptom-choice" key={symptom}>
+              <input type="checkbox" checked={selectedSymptoms.includes(symptom)} onChange={e =>
+                setSelectedSymptoms(current => e.target.checked ? [...current, symptom] : current.filter(value => value !== symptom))} />{symptom}
+            </label>)}</div>
+            <details className="more-symptoms"><summary>More symptoms</summary>
             <div className="symptom-groups">{symptomGroups.map(group => <div key={group.name}><h3>{group.name}</h3>
-              {group.symptoms.map(symptom => <label className="symptom-choice" key={symptom}>
+              {group.symptoms.filter(symptom => !commonSymptoms.includes(symptom)).map(symptom => <label className="symptom-choice" key={symptom}>
                 <input type="checkbox" checked={selectedSymptoms.includes(symptom)} onChange={e =>
                   setSelectedSymptoms(current => e.target.checked ? [...current, symptom] : current.filter(value => value !== symptom))} />
                 {symptom}
               </label>)}</div>)}</div>
+            </details><p className="selection-count" role="status">{selectedSymptoms.length ? selectedSymptoms.length + ' symptom' + (selectedSymptoms.length === 1 ? '' : 's') + ' selected' : 'Choose the symptoms you want to report.'}</p>
           </fieldset>
           <label>How much is this affecting you?<select value={severity} onChange={e => setSeverity(e.target.value as typeof severity)}>
             <option value="unsure">Not sure</option><option value="mild">Mild</option><option value="moderate">Moderate</option><option value="severe">Severe</option>
           </select></label>
+          <details className="optional-details"><summary>Timing and notes <span className="optional">Optional</span></summary>
+          <label>Who is reporting?<select value={reporter} onChange={e => setReporter(e.target.value)}><option value="CM-2">CM-2 · Reporting for myself</option><option value="CM-1">CM-1 · Reporting for CM-2</option></select></label>
           <fieldset><legend>When did it begin?</legend><div className="choices">{[
             ['now', 'Around now'], ['earlier', 'About 10 minutes ago'], ['uncertain', 'Not sure'],
           ].map(([value, label]) => <label key={value}><input type="radio" name="onset" value={value} checked={onset === value} onChange={() => setOnset(value)} />{label}</label>)}</div>
           <p className="help">Onset helps a teammate distinguish measurements taken before and after your symptoms.</p></fieldset>
           <label>Anything a teammate should know? <span className="optional">Optional</span><textarea maxLength={500} rows={3} value={note} onChange={e => setNote(e.target.value)} placeholder="Describe how you feel in your own words" /></label>
-          <button className="primary" disabled={busy}>Save report and open handoff</button>
+          </details>
+          <div className="report-submit"><button className="primary" disabled={busy || !selectedSymptoms.length}>Save report and open handoff</button></div>
         </form></section>
-        <section className="panel"><h2>Measurements available</h2>{summary}<div className="guidance-text"><h3>Why collect a fresh reading?</h3><p>A measurement from exercise describes that moment. Record the time and context of any new measurement so a teammate can interpret it.</p><p className="help">Request assistance whenever needed. You can continue without adding a measurement.</p></div>
+        <section className="panel"><h2>Your current record</h2><p>{result.symptoms.length ? result.symptoms.map(s => s.symptom).join(', ') + ' · Reported' : 'No open symptoms reported.'}</p>
+          <p className="help">Your words matter even when measurements are unavailable. You can submit a report without a new reading.</p>
+          <details open={measurementOpen} onToggle={e => setMeasurementOpen(e.currentTarget.open)}><summary>Record an existing measurement</summary>
+          <p className="help">Enter a reading from another device. This app does not take measurements.</p>
           <form onSubmit={recordMeasurement}>
             <label>Measurement type<select value={measurementKind} onChange={e => {
               setMeasurementKind(e.target.value as typeof measurementKind); setMeasurement(''); setDiastolic('')
@@ -309,15 +243,16 @@ export default function App() {
               'Value (' + indicatorDefinitions[measurementKind].unit + ')'}
               <input type="number" step="any" value={measurement} onChange={e => setMeasurement(e.target.value)} required /></label>
             {measurementKind === 'blood_pressure' && <label>Diastolic pressure (mmHg)<input type="number" step="1" value={diastolic} onChange={e => setDiastolic(e.target.value)} required /></label>}
-            <label>Measurement context<select value={context} onChange={e => setContext(e.target.value)}><option value="post_exercise">After exercise</option><option value="rest">At rest</option><option value="exercise">During exercise</option></select></label>
-            <p className="help">Uses the current mission clock. Values entered in this demo are synthetic.</p><button disabled={busy}>Save measurement</button></form>
+            {measurementKind !== 'sleep_duration' && <label>Measurement context<select value={context} onChange={e => setContext(e.target.value)}><option value="unspecified">Not sure</option><option value="post_exercise">After exercise</option><option value="rest">At rest</option><option value="exercise">During exercise</option></select></label>}
+            <p className="help">Uses the current mission clock. Values entered in this demo are synthetic.</p><button disabled={busy}>Save measurement</button></form></details>
         </section>
       </div>}
 
       {view === 'Handoff' && <div className="workspace">
         <section className="panel"><div className="panel-heading"><h2>CM-2 · Episode summary</h2><span>{episodeTime ? 'Opened ' + time(episodeTime) + ' UTC' : 'No concern reported'}</span></div>
           {summary}
-          {result.symptoms.map(s => <div className="report" key={s.id}><h3>{s.description}</h3><p>Reported by {s.actor} at {time(s.at)} UTC.</p>
+          {result.symptoms.map((s, index) => <div className="report" key={s.id}><h3>{s.symptom}</h3><p>Reported by {s.actor} at {time(s.at)} UTC.</p>
+            {s.description && !result.symptoms.slice(0, index).some(previous => previous.description === s.description && previous.at === s.at) && <p>{s.description}</p>}
             <p>Onset {s.onset ? 'approximately ' + time(s.onset) + ' UTC' : 'uncertain'}.</p>
             {s.severity && <p>Reported impact: {s.severity}.</p>}
             <button disabled={busy} onClick={() => void append({ type: 'symptom_updated', relatedId: s.id, resolved: true,
@@ -325,8 +260,8 @@ export default function App() {
           </div>)}
           <h3>What remains uncertain</h3><p>{result.available ? 'The cause of any reported symptom remains unassessed.' :
             'Current heart rate is unavailable. The cause of any reported symptom remains unassessed.'}</p>
-          <h3>Other measurements</h3><div className="facts">{result.metrics.filter(metric => metric.indicator !== 'heart_rate').map(metric =>
-            <div key={metric.indicator}><span>{metric.name}</span><strong>{metric.last ? metric.last.value + ' ' + metric.unit : 'Not measured'} · {metricStates[metric.state]}</strong></div>)}</div>
+          <details><summary>Other measurements</summary><div className="facts">{result.metrics.filter(metric => metric.indicator !== 'heart_rate').map(metric =>
+            <div key={metric.indicator}><span>{metric.name}</span><strong>{metric.last ? metric.last.value + ' ' + metric.unit : 'Not measured'} · {metricStates[metric.state]}</strong></div>)}</div></details>
         </section>
         <section className="panel"><h2>{acknowledged ? 'Handoff acknowledged' : 'Teammate taking over'}</h2>
           {acknowledged ? <><p className="acknowledged">{result.acknowledgement!.actor} acknowledged at {time(result.acknowledgement!.at)} UTC.</p><p>The symptom report remains in this episode until explicitly updated.</p>
@@ -342,7 +277,7 @@ export default function App() {
               <button className="primary" disabled={busy || !concern} onClick={() => void append({ type: 'handoff_acknowledged', actor,
                 description: handoffNote.trim() || undefined }).then(ok => { if (ok) setHandoffNote('') })}>Acknowledge handoff</button>
               {!concern && <p className="help">Use Request assistance to open a handoff without reporting symptoms.</p>}</>}
-          <div className="guidance-text"><h3>Local record</h3><p>{savedAt}. Sharing currently means passing this tablet. Cloud synchronization has not been connected.</p>
+          <div className="guidance-text"><h3>Local record</h3><p>{savedAt}. Pass this tablet to a teammate. Use the ground connection below to archive a snapshot.</p>
             </div>
           <details><summary>Why this information is shown</summary><ul>{result.reasons.map(reason => <li key={reason}>{reason}</li>)}</ul><p>Rule version {ruleVersion}. Measurement validity window: 2 minutes, an illustrative demo setting.</p></details>
         </section>
@@ -368,7 +303,7 @@ export default function App() {
       </>}
 
       {(view === 'Handoff' || view === 'History') && <section className="panel ground-report">
-        <div className="panel-heading"><h2>Ground-review packet</h2><span>Local preview · Not transmitted</span></div>
+        <div className="panel-heading"><h2>Ground-review packet</h2><span>Current snapshot · Local preview</span></div>
         <p>Combines the crew report, available measurements, missing information and the teammate's handoff record for review on the ground.</p>
         <div className="facts">
           <div><span>Record as of</span><strong>{time(groundReport.asOf)} UTC</strong></div>
@@ -390,7 +325,7 @@ export default function App() {
             </div>)}
         </details>
         <button onClick={exportRun}>Export ground-review packet (JSON)</button>
-        <GroundConnection run={run} />
+        <Suspense fallback={<p role="status">Opening ground connection…</p>}><GroundConnection run={run} /></Suspense>
       </section>}
 
       <details className="demo-controls"><summary>Demo controls <span>Scenario {run.scenario} · Synthetic data</span></summary>

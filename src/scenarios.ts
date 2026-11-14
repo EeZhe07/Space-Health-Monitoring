@@ -9,6 +9,8 @@ export const scenarioNames: Record<Scenario, string> = {
   B: 'Sensor interruption',
   C: 'Dizziness + interruption',
   D: 'Assistance without readings',
+  E: 'Dizziness · Teammate took over',
+  F: 'No readings · Teammate took over',
 }
 export function createRun(scenario: Scenario): Run {
   const rawEvents = eventFiles['../data/scenarios/scenario_' + scenario + '_events.json']
@@ -22,10 +24,11 @@ export function createRun(scenario: Scenario): Run {
   return {
     id: crypto.randomUUID(), scenario,
     // A's last fixture row arrives five seconds after its original expected time.
-    now: scenario === 'A' ? '2027-07-18T14:10:10Z' : '2027-07-18T14:09:00Z',
+    now: scenario === 'A' ? '2027-07-18T14:10:10Z' :
+      scenario === 'E' || scenario === 'F' ? '2027-07-18T14:11:00Z' : '2027-07-18T14:09:00Z',
     observations: [
       ...parseMeasurements(csvFiles['../data/scenarios/scenario_' + scenario + '_hr.csv']),
-      ...(scenario === 'D' ? [] : simulatedPanel('2027-07-18T14:08:00Z')),
+      ...(scenario === 'D' || scenario === 'F' ? [] : simulatedPanel('2027-07-18T14:08:00Z')),
     ],
     events,
   }
