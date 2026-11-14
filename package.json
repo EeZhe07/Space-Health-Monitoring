@@ -13,7 +13,8 @@
     "test:chart-browser": "node scripts/check-chart-browser.cjs",
     "test:break-browser": "node scripts/check-attention-browser.cjs",
     "test:daily-browser": "node scripts/check-daily-browser.cjs",
-    "test:demo-browser": "node scripts/check-demo-browser.cjs"
+    "test:demo-browser": "node scripts/check-demo-browser.cjs",
+    "test:ground-browser": "node scripts/check-ground-browser.cjs"
   },
   "dependencies": {
     "@fontsource/source-sans-3": "^5.3.1",

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Run } from './core'
+import { crewOf } from './mission'
 import { dailyStatus, moodRatings, needsFollowUp, type DailyCheckIn as Entry } from './wellbeing'
 
 export default function DailyCheckIn({ run, busy, onSave, onFollowUp }: {
@@ -24,14 +25,14 @@ export default function DailyCheckIn({ run, busy, onSave, onFollowUp }: {
         if (needsFollowUp(entry)) onFollowUp(entry)
       } else setFailed(true) } finally { setSaving(false) }
     }}>
-      <p>CM-2, how have you felt today?</p>
+      <p>{crewOf(run)}, how have you felt today?</p>
       <fieldset disabled={busy || saving}><legend>Mood today</legend><div className="daily-ratings">{moodRatings.map((label, index) =>
         <label key={label}><input type="radio" name="daily-mood" checked={rating === index + 1} onChange={() => setRating(index + 1)}/><strong>{index + 1}</strong><span>{label}</span></label>)}</div></fieldset>
       <fieldset disabled={busy || saving}><legend>Any uncomfortable feelings?</legend><div className="daily-comfort">
         <label><input type="radio" name="daily-comfort" checked={discomfort === false} onChange={() => setDiscomfort(false)}/>No uncomfortable feelings</label>
         <label><input type="radio" name="daily-comfort" checked={discomfort === true} onChange={() => setDiscomfort(true)}/>I feel uncomfortable</label>
       </div></fieldset>
-      <p className="help">Low mood or discomfort opens Self-check for more detail. Saved in History on this shared tablet; excluded from ground reports. Reminder interval: 20 hours.</p>
+      <p className="help">Low mood or discomfort opens Self-check for more detail. Saved in History on this shared tablet. Shared only if you enable wellbeing sharing before sending a report. Reminder interval: 20 hours.</p>
       {failed && <p role="alert">Your check-in wasn’t saved. Try Save daily check-in again.</p>}
       <div className="button-row"><button className="primary" disabled={rating === null || discomfort === null || busy || saving}>Save daily check-in</button>
         {!status.due && <button type="button" disabled={saving} onClick={() => setEditing(false)}>Cancel update</button>}</div>

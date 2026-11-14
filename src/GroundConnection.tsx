@@ -4,9 +4,10 @@ import { buildGroundReport } from './report'
 import { listGroundPackets, saveGroundPacket, type GroundPacket } from './storage'
 import { time, type Run } from './core'
 import { metricStates } from './MeasurementExplorer'
+import { isCrewPacket } from './mission'
 
 type RemotePacket = { id: string; created_at: string; report: ReturnType<typeof buildGroundReport> }
-export default function GroundConnection({ run }: { run: Run }) {
+export default function GroundConnection({ run, recordBusy = false }: { run: Run; recordBusy?: boolean }) {
   const [userId, setUserId] = useState<string | null>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -22,6 +23,7 @@ export default function GroundConnection({ run }: { run: Run }) {
     setLocal(packets.filter(packet => packet.userId === id))
     if (navigator.onLine && supabase) {
       const result = await supabase.from('crew_health_packets').select('id, created_at, report')
+        .or('report->>kind.is.null,report->>kind.eq.crew_report')
         .order('created_at', { ascending: false }).limit(10)
       if (result.error) throw result.error
       if (activeUser.current !== id) return
@@ -105,7 +107,7 @@ export default function GroundConnection({ run }: { run: Run }) {
     } catch (error) { showError(error) } finally { if (!working.current) setBusy(false) }
   }
   async function queue() {
-    if (!userId || working.current) return
+    if (!userId || working.current || recordBusy) return
     working.current = true; setBusy(true); setMessage('')
     try {
       const report = buildGroundReport(run)
@@ -132,16 +134,16 @@ export default function GroundConnection({ run }: { run: Run }) {
         <p className="help">The project owner must first run the SQL setup and create a confirmed demo user in Supabase Auth.</p>
         <button disabled={busy}>Sign in to ground archive</button>
       </form> : <>
-        <div className="button-row"><button className="primary" disabled={busy} onClick={() => void queue()}>{busy ? 'Saving…' : 'Save and send snapshot'}</button>
+        <div className="button-row"><button className="primary" disabled={busy || recordBusy} onClick={() => void queue()}>{busy ? 'Saving…' : 'Save and send snapshot'}</button>
           <button disabled={busy || !local.some(packet => packet.state === 'pending')} onClick={() => void syncQueued()}>Retry pending packets</button>
           <button disabled={busy} onClick={() => void refresh(userId).catch(showError)}>Refresh server archive</button>
           <button disabled={busy} onClick={() => { void supabase!.auth.signOut({ scope: 'local' }).then(({ error }) => { if (error) showError(error) }) }}>Sign out</button></div>
         <h3>On this device</h3>
         <p className="help">Snapshots save here first. Pending packets retry when this section is loaded or the connection returns.</p>
-        {local.filter(packet => packet.runId === run.id).length ? <ul>{local.filter(packet => packet.runId === run.id).map(packet =>
+        {local.filter(packet => packet.runId === run.id && isCrewPacket(packet)).length ? <ul>{local.filter(packet => packet.runId === run.id && isCrewPacket(packet)).map(packet =>
           <li key={packet.id}>{time(packet.report.asOf)} UTC snapshot · {packet.state === 'stored' ? 'Stored on server' : 'Pending upload'} <small>({packet.id.slice(0, 8)})</small></li>)}</ul> : <p>No saved snapshots for this replay.</p>}
         <h3>Server archive</h3>
-        {remote.length ? remote.map(packet => <details className="archived-packet" key={packet.id}><summary>Scenario {packet.report.scenario} · {time(packet.report.asOf)} UTC snapshot</summary>
+        {remote.filter(packet => packet.report.kind !== 'ground_response').length ? remote.filter(packet => packet.report.kind !== 'ground_response').map(packet => <details className="archived-packet" key={packet.id}><summary>{packet.report.crewId} · Scenario {packet.report.scenario} · {time(packet.report.asOf)} UTC snapshot</summary>
           <div className="facts"><div><span>Crew report</span><strong>{packet.report.symptoms.map(symptom => symptom.symptom).join(', ') || 'No open symptoms'}</strong></div>
             <div><span>Onboard handoff</span><strong>{packet.report.handoff ? packet.report.handoff.actor + ' · ' + time(packet.report.handoff.at) + ' UTC' : 'Not acknowledged'}</strong></div>
             <div><span>Server receipt</span><strong>{new Date(packet.created_at).toLocaleString('en-GB', { timeZone: 'UTC' })} UTC</strong></div></div>

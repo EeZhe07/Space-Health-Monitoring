@@ -13,10 +13,10 @@ export const scenarioNames: Record<Scenario, string> = {
   E: 'Dizziness · Teammate took over',
   F: 'No readings · Teammate took over',
 }
-export function createRun(scenario: Scenario): Run {
+export function createRun(scenario: Scenario, crewId = 'CM-2'): Run {
   if (scenario === 'default') {
     const measuredAt = '2027-07-18T14:10:00Z'
-    return { id: crypto.randomUUID(), scenario, now: '2027-07-18T14:10:10Z', events: [],
+    return { id: crypto.randomUUID(), scenario, crewId, now: '2027-07-18T14:10:10Z', events: [],
       observations: [...simulatedPanel(measuredAt), { id: crypto.randomUUID(), indicator: 'heart_rate',
         value: 82, unit: 'bpm', measuredAt, receivedAt: measuredAt, context: 'rest',
         source: 'simulated_device', quality: 'ok', synthetic: true }] }
@@ -25,12 +25,12 @@ export function createRun(scenario: Scenario): Run {
   const events: CrewEvent[] = rawEvents.map(e => ({
     id: String(e.event_id), type: e.type as EventType,
     at: String(e.time ?? e.reported_at),
-    actor: String(e.by ?? (e.reporter === 'self' ? 'CM-2' : e.reporter ?? '')),
+    actor: String(e.by === crewId ? 'CM-1' === crewId ? 'CM-2' : 'CM-1' : e.by ?? (e.reporter === 'self' ? crewId : e.reporter ?? '')),
     symptom: e.symptom as string | undefined, description: e.description as string | undefined,
     onset: e.onset_at as string | undefined, certainty: e.onset_certainty as string | undefined,
   }))
   return {
-    id: crypto.randomUUID(), scenario,
+    id: crypto.randomUUID(), scenario, crewId,
     // A's last fixture row arrives five seconds after its original expected time.
     now: scenario === 'A' ? '2027-07-18T14:10:10Z' :
       scenario === 'E' || scenario === 'F' ? '2027-07-18T14:11:00Z' : '2027-07-18T14:09:00Z',
@@ -40,4 +40,7 @@ export function createRun(scenario: Scenario): Run {
     ],
     events,
   }
+}
+export function restartRun(scenario: Scenario, current: Run) {
+  return { ...createRun(scenario, current.crewId ?? 'CM-2'), demoBatchId: current.demoBatchId }
 }

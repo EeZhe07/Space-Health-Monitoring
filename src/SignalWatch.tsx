@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Run } from './core'
+import { crewOf } from './mission'
 import { analyseAttention, attentionLabels, attentionProtocol, type AttentionSession, type TaskInput, visibleAttention } from './wellbeing'
 
 type Phase = 'intro' | 'wait' | 'signal' | 'feedback' | 'finished' | 'stopped'
@@ -91,7 +92,7 @@ export default function SignalWatch({ run, onSave, onSelfCheck }: {
   const analysis = result ? analyseAttention(result, visibleAttention(run)) : null
   return <section className="panel signal-watch"><div className="panel-heading"><h2>Signal Watch</h2><span>Exploratory attention task</span></div>
     <p>Wait for <strong>SIGNAL</strong>, then respond once. Follow 12 signals to record a short round.</p>
-    <p className="help">For CM-2. A saved round includes response times, missed signals and early inputs on this shared tablet. Ground reports exclude these records.</p>
+    <p className="help">For {crewOf(run)}. Raw responses stay on this shared tablet. A summary is shared only if you enable wellbeing sharing before sending a report.</p>
     {(phase === 'intro' || phase === 'stopped') && <>
       <label htmlFor="signal-input">Response control</label><select id="signal-input" value={input} onChange={e => setInput(e.target.value as TaskInput)}>
         <option value="mouse">Mouse click</option><option value="touch">Touch screen</option><option value="keyboard">Space or Enter key</option>

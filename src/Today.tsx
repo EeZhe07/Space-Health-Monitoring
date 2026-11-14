@@ -3,10 +3,12 @@ import { metricStates } from './MeasurementExplorer'
 import TrendChart from './TrendChart'
 import type { Indicator } from './indicators'
 import type { ReactNode } from 'react'
+import { crewOf } from './mission'
 
-export default function Today({ run, onReport, onHandoff, onMeasurements, onBreak, dailyCheckIn }: {
+export default function Today({ run, onReport, onHandoff, onMeasurements, onBreak, dailyCheckIn, groundNotice }: {
   run: Run; onReport: () => void; onHandoff: () => void; onMeasurements: (indicator?: Indicator) => void; onBreak: () => void
   dailyCheckIn?: ReactNode
+  groundNotice?: ReactNode
 }) {
   const result = assess(run)
   const concern = result.symptoms.length > 0 || result.assistanceRequested
@@ -25,9 +27,10 @@ export default function Today({ run, onReport, onHandoff, onMeasurements, onBrea
           {concern && <button onClick={onReport}>Add a symptom</button>}</div>
       </div>
       <div className="episode-state"><span>Onboard handoff</span><strong>{acknowledged ? 'Acknowledged' : concern ? 'Awaiting a teammate' : 'Available if needed'}</strong>
-        <small>{acknowledged ? result.acknowledgement!.actor + ' · ' + time(result.acknowledgement!.at) + ' UTC' : 'CM-2 · Shared tablet'}</small>
+        <small>{acknowledged ? result.acknowledgement!.actor + ' · ' + time(result.acknowledgement!.at) + ' UTC' : crewOf(run) + ' · Shared tablet'}</small>
       </div>
     </section>
+    {groundNotice}
     {dailyCheckIn}
     <section className="panel overview-panel">
       <div className="panel-heading"><h2>Latest measurements</h2><button onClick={() => onMeasurements(result.metrics.find(m => m.state === 'review')?.indicator)}>

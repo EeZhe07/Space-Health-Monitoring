@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { assess, time, ruleVersion, type CrewEvent, type Run, type Scenario } from './core'
-import { createRun, scenarioNames } from './scenarios'
-import { listRuns, loadRun, saveRun, loadDemoSettings, saveDemoStart } from './storage'
+import { createRun, restartRun, scenarioNames } from './scenarios'
+import { listRuns, loadRun, saveRun, loadDemoSettings, saveDemoStart, loadCrewRun, saveTeamDemo, type GroundPacket } from './storage'
+import { crewOf, roster, localDemoUser } from './mission'
+import type { InboxSource } from './useGroundInbox'
 import { buildGroundReport } from './report'
 import { indicatorDefinitions, indicatorOf, simulatedPanel, type Indicator } from './indicators'
 import { symptomGroups, commonSymptoms } from './symptoms'
@@ -16,6 +18,9 @@ import { visibleMoods, type Mood } from './breakRound'
 import DemoSetup from './DemoSetup'
 import { defaultDemoSettings, type DemoSettings } from './demoSettings'
 const GroundConnection = lazy(() => import('./GroundConnection'))
+const GroundReview = lazy(() => import('./GroundReview'))
+const CrewExchange = lazy(() => import('./CrewExchange'))
+const CrewGroundNotice = lazy(() => import('./CrewGroundNotice'))
 
 type View = 'Today' | 'Measurements' | 'Self-check' | 'Handoff' | 'History' | 'Crew break'
 const views: View[] = ['Today', 'Measurements', 'Self-check', 'Handoff', 'History', 'Crew break']
@@ -31,6 +36,17 @@ function advance(iso: string, seconds = 5) {
 }
 export default function App() {
   const [run, setRun] = useState<Run | null>(null)
+  const [workspace, setWorkspace] = useState(() => location.hash === '#ground' ? 'ground' : 'crew')
+  const [exchangeSource, setExchangeSource] = useState<InboxSource>('demo')
+  function openGround() { history.replaceState(null, '', '#ground'); setWorkspace('ground') }
+  async function openCrew() {
+    try {
+      const active = await loadRun()
+      if (active) setRun(active)
+      setArchives(await listRuns())
+      history.replaceState(null, '', '#today'); setWorkspace('crew')
+    } catch { setError('The latest crew record could not be reopened. Retry local storage.'); setWorkspace('crew') }
+  }
   const [view, setView] = useState<View>('Today')
   const [demoOpen, setDemoOpen] = useState(false)
   const [demoSettings, setDemoSettings] = useState<DemoSettings>(defaultDemoSettings)
@@ -53,6 +69,7 @@ export default function App() {
   const [savedAt, setSavedAt] = useState('')
   const [archives, setArchives] = useState<Run[]>([])
   const [reset, setReset] = useState(false)
+  const [shareSetting, setShareSetting] = useState<boolean | null>(null)
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([])
   const [severity, setSeverity] = useState<'mild' | 'moderate' | 'severe' | 'unsure'>('unsure')
   const [onset, setOnset] = useState('uncertain')
@@ -70,6 +87,7 @@ export default function App() {
   const [replaySeconds, setReplaySeconds] = useState<number | null>(null)
   const pending = useRef<Run | null>(null)
   const saving = useRef(false)
+  const switching = useRef(false)
 
   async function initialise() {
     if (initialising.current) return
@@ -78,8 +96,8 @@ export default function App() {
     try {
       const preferences = await loadDemoSettings()
       const stored = await loadRun()
-      const initial = preferences.resumeLastRun && stored ? stored : createRun(preferences.startupScenario)
-      if (initial !== stored) await saveRun(initial)
+      const initial = preferences.resumeLastRun && stored ? stored : stored ? restartRun(preferences.startupScenario, stored) : createRun(preferences.startupScenario)
+      await saveRun(initial)
       setDemoSettings(preferences)
       setRun(initial); setSavedAt('Saved on this device')
       setArchives(await listRuns())
@@ -89,9 +107,9 @@ export default function App() {
   }
   useEffect(() => { void initialise() }, [])
   useEffect(() => {
-    setSelectedSymptoms([]); setSeverity('unsure'); setOnset('uncertain'); setNote(''); setReporter('CM-2'); setNotesOpen(false); setDailyContext('')
-    setActor('CM-1'); setMeasurement(''); setContext('unspecified'); setReplaySeconds(null)
-    setReset(false); setHandoffNote(''); setMeasurementKind('heart_rate'); setDiastolic(''); setMeasurementOpen(false)
+    setSelectedSymptoms([]); setSeverity('unsure'); setOnset('uncertain'); setNote(''); setReporter(run ? crewOf(run) : 'CM-2'); setNotesOpen(false); setDailyContext('')
+    setActor(roster.find(id => id !== (run ? crewOf(run) : 'CM-2'))!); setMeasurement(''); setContext('unspecified'); setReplaySeconds(null)
+    setReset(false); setHandoffNote(''); setMeasurementKind('heart_rate'); setDiastolic(''); setMeasurementOpen(false); setShareSetting(null); setExchangeSource('demo')
   }, [run?.id])
   useEffect(() => {
     const update = () => setOnline(navigator.onLine)
@@ -138,6 +156,29 @@ export default function App() {
       id: crypto.randomUUID(), at: run.now, mood,
     }] }, true)
   }
+  async function switchCrew(crewId: string) {
+    if (saving.current || switching.current) return
+    switching.current = true; setBusy(true)
+    try {
+      const saved = await loadCrewRun(crewId)
+      if (await commit(saved ?? createRun('default', crewId))) { setView('Today'); setDemoOpen(false) }
+    } catch { setError('The crew profile could not be opened. Try again.') }
+    finally { switching.current = false; setBusy(false) }
+  }
+  async function loadTeam() {
+    if (saving.current) return
+    saving.current = true; setBusy(true); setError('')
+    try {
+      const demoBatchId = crypto.randomUUID()
+      const runs = [createRun('default', 'CM-1'), createRun('C', 'CM-2'), createRun('B', 'CM-3'), createRun('D', 'CM-4')].map(r => ({ ...r, demoBatchId }))
+      const packets: GroundPacket[] = runs.slice(0, 3).map(r => ({ id: crypto.randomUUID(), runId: r.id,
+        userId: localDemoUser, state: 'demo', demoReceivedAt: new Date().toISOString(), report: buildGroundReport(r) }))
+      await saveTeamDemo(runs, packets)
+      setRun(runs[1]); setArchives(await listRuns()); setDemoSettings(defaultDemoSettings); setDemoOpen(false); setView('Today')
+      setSavedAt('Team demo saved · Three snapshots shared locally')
+    } catch { setError('Team demo could not be saved. Try Load team demonstration again.') }
+    finally { saving.current = false; setBusy(false) }
+  }
   async function saveDaily(entry: DailyEntry) {
     if (!run) return false
     return commit({ ...run, dailyCheckIns: [...(run.dailyCheckIns ?? []), entry] }, true)
@@ -150,7 +191,9 @@ export default function App() {
   function followDaily(entry: DailyEntry) {
     const summary = 'Daily self-check: mood ' + entry.moodRating + '/5 (' + moodRatings[entry.moodRating - 1] +
       '); ' + (entry.discomfort ? 'discomfort reported.' : 'no uncomfortable feelings reported.')
-    setDailyContext(summary + ' Select any symptoms or Another concern to explain how you feel. Your daily answers are not copied into the ground report.')
+    setDailyContext(summary + ' Select any symptoms or Another concern to explain how you feel. ' + (run?.shareWellbeing
+      ? 'Your latest wellbeing summary will be included in reports you choose to share.'
+      : 'Your daily answers are not copied into the ground report.'))
     setView('Self-check')
   }
   async function submitSymptom(e: FormEvent) {
@@ -200,7 +243,7 @@ export default function App() {
     }
   }
   function exportRun() {
-    if (!run) return
+    if (!run || saving.current) return
     const blob = new Blob([JSON.stringify(buildGroundReport(run), null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -209,6 +252,9 @@ export default function App() {
   }
   if (!run) return <main className="loading"><h1>Crew Health</h1><p role="status">{error || 'Opening the local record…'}</p>
     {error && <button onClick={() => void initialise()}>Retry local storage</button>}</main>
+  if (workspace === 'ground') return <Suspense fallback={<main className="loading"><h1>Opening Ground Review…</h1></main>}>
+    <GroundReview onCrew={openCrew}/>
+  </Suspense>
   const result = assess(run)
   const groundReport = buildGroundReport(run)
   const concern = result.symptoms.length > 0 || result.assistanceRequested
@@ -229,10 +275,13 @@ export default function App() {
   </div>
   return <div className="app">
     <header className="topbar">
-      <a className="brand" href="#today" onClick={() => setView('Today')}>Crew Health<span>CM-2 · Mission day 140</span></a>
+      <a className="brand" href="#today" onClick={() => setView('Today')}>Crew Health<span>{crewOf(run)} · Mission day 140</span></a>
       <div className="connection"><span className={'dot ' + (online ? 'connected' : '')} />{online ? 'Device online' : 'Device offline'}<small>Local record</small></div>
       <button className="assistance" onClick={() => void requestAssistance()} disabled={busy}>Request assistance</button>
     </header>
+    <div className="workspace-switch"><label>Demo crew profile<select aria-label="Demo crew profile" value={crewOf(run)} disabled={busy} onChange={e => void switchCrew(e.target.value)}>
+      {roster.map(id => <option key={id}>{id}</option>)}</select></label><button onClick={openGround}>Open Ground Review</button>
+      <span>Individual crew tablet · Fictional profiles</span></div>
     <nav aria-label="Main navigation">{views.map(v => <button key={v} aria-current={view === v ? 'page' : undefined}
       onClick={() => { if (v === 'Measurements') setInitialMetric('heart_rate'); setView(v) }}>{v}{v === 'Handoff' && concern && !acknowledged ? ' · Pending' : ''}</button>)}</nav>
     <main>
@@ -248,9 +297,11 @@ export default function App() {
         <button ref={demoToggle} aria-expanded={demoOpen} aria-controls="demo-setup" onClick={() => setDemoOpen(open => !open)}>Demo setup</button></div></div>
       {demoOpen && <DemoSetup currentScenario={run.scenario} settings={demoSettings} busy={busy}
         onClose={() => { setDemoOpen(false); demoToggle.current?.focus() }}
-        onStart={preferences => { void commit(createRun(preferences.startupScenario), false, preferences) }} />}
+        onLoadTeam={() => void loadTeam()}
+        onStart={preferences => { void commit(restartRun(preferences.startupScenario, run), false, preferences) }} />}
 
       {view === 'Today' && <Today run={run} onReport={() => setView('Self-check')}
+        groundNotice={<Suspense fallback={null}><CrewGroundNotice run={run} onOpen={source => { setExchangeSource(source); setView('Handoff') }}/></Suspense>}
         dailyCheckIn={<DailyCheckIn key={run.id} run={run} busy={busy} onSave={saveDaily} onFollowUp={followDaily}/>}
         onHandoff={() => setView('Handoff')} onBreak={() => setView('Crew break')}
         onMeasurements={indicator => { setInitialMetric(indicator ?? 'heart_rate'); setView('Measurements') }} />}
@@ -282,7 +333,7 @@ export default function App() {
             <option value="unsure">Not sure</option><option value="mild">Mild</option><option value="moderate">Moderate</option><option value="severe">Severe</option>
           </select></label>
           <details className="optional-details" open={notesOpen} onToggle={e => setNotesOpen(e.currentTarget.open)}><summary>Timing and notes <span className="optional">Optional</span></summary>
-          <label>Who is reporting?<select value={reporter} onChange={e => setReporter(e.target.value)}><option value="CM-2">CM-2 · Reporting for myself</option><option value="CM-1">CM-1 · Reporting for CM-2</option></select></label>
+          <label>Who is reporting?<select value={reporter} onChange={e => setReporter(e.target.value)}>{roster.map(id => <option key={id} value={id}>{id} · {id === crewOf(run) ? 'Reporting for myself' : 'Reporting for ' + crewOf(run)}</option>)}</select></label>
           <fieldset><legend>When did it begin?</legend><div className="choices">{[
             ['now', 'Around now'], ['earlier', 'About 10 minutes ago'], ['uncertain', 'Not sure'],
           ].map(([value, label]) => <label key={value}><input type="radio" name="onset" value={value} checked={onset === value} onChange={() => setOnset(value)} />{label}</label>)}</div>
@@ -314,7 +365,7 @@ export default function App() {
       </div>}
 
       {view === 'Handoff' && <div className="workspace">
-        <section className="panel"><div className="panel-heading"><h2>CM-2 · Episode summary</h2><span>{episodeTime ? 'Opened ' + time(episodeTime) + ' UTC' : 'No concern reported'}</span></div>
+        <section className="panel"><div className="panel-heading"><h2>{crewOf(run)} · Episode summary</h2><span>{episodeTime ? 'Opened ' + time(episodeTime) + ' UTC' : 'No concern reported'}</span></div>
           {summary}
           {result.symptoms.map((s, index) => <div className="report" key={s.id}><h3>{s.symptom}</h3><p>Reported by {s.actor} at {time(s.at)} UTC.</p>
             {s.description && !result.symptoms.slice(0, index).some(previous => previous.description === s.description && previous.at === s.at) && <p>{s.description}</p>}
@@ -337,7 +388,7 @@ export default function App() {
               <label>Update for ground review<textarea rows={3} maxLength={1000} value={handoffNote} onChange={e => setHandoffNote(e.target.value)} required /></label>
               <button disabled={busy}>Save teammate update</button>
             </form></> :
-            <><p>Confirm on this tablet when you have reviewed the record and are taking over.</p><label>Your crew identifier<select value={actor} onChange={e => setActor(e.target.value)}><option>CM-1</option><option>CM-3</option><option>CM-4</option></select></label>
+            <><p>Confirm on this tablet when you have reviewed the record and are taking over.</p><label>Your crew identifier<select value={actor} onChange={e => setActor(e.target.value)}>{roster.filter(id => id !== crewOf(run)).map(id => <option key={id}>{id}</option>)}</select></label>
               <label>Handoff findings <span className="optional">Optional</span><textarea rows={3} maxLength={1000} value={handoffNote} onChange={e => setHandoffNote(e.target.value)} placeholder="What you observed and what you have done" /></label>
               <button className="primary" disabled={busy || !concern} onClick={() => void append({ type: 'handoff_acknowledged', actor,
                 description: handoffNote.trim() || undefined }).then(ok => { if (ok) setHandoffNote('') })}>Acknowledge handoff</button>
@@ -351,7 +402,7 @@ export default function App() {
       {view === 'History' && <>
         <WellbeingHistory run={run}/>
         {visibleMoods(run).length > 0 && <details className="panel mood-history"><summary>Mood check-ins · This tablet only ({visibleMoods(run).length})</summary>
-          <p className="help">CM-2’s own words for this replay. Excluded from ground reports.</p>
+          <p className="help">{crewOf(run)}’s own words for this replay. Shared only when wellbeing sharing is enabled.</p>
           <ul>{visibleMoods(run).map(entry => <li key={entry.id}><time dateTime={entry.at}>{time(entry.at)} UTC</time> · {entry.mood}</li>)}</ul>
         </details>}
         <div className="workspace">
@@ -363,7 +414,7 @@ export default function App() {
               </div></li>)}</ol> : <p>No crew or device events have occurred at this replay time.</p>}
           </section>
           <section className="panel"><h2>Saved replays</h2><p className="help">Each replay keeps its own actions. Opening one restores its mission clock.</p><ul className="saved-runs">
-            {archives.map(archive => <li key={archive.id}><div><strong>Scenario {archive.scenario} · {scenarioNames[archive.scenario]}</strong><span>{time(archive.now)} UTC · {archive.id.slice(0, 8)}</span></div>
+            {archives.filter(archive => crewOf(archive) === crewOf(run)).map(archive => <li key={archive.id}><div><strong>Scenario {archive.scenario} · {scenarioNames[archive.scenario]}</strong><span>{time(archive.now)} UTC · {archive.id.slice(0, 8)}</span></div>
               <button disabled={busy || archive.id === run.id} onClick={() => void commit(archive)}>{archive.id === run.id ? 'Current' : 'Open'}</button></li>)}
           </ul></section>
         </div>
@@ -394,14 +445,18 @@ export default function App() {
               <p className="help">Freshness window: {metric.freshnessMinutes} minutes. {metric.freshnessBasis}</p>
             </div>)}
         </details>
-        <button onClick={exportRun}>Export ground-review packet (JSON)</button>
-        <Suspense fallback={<p role="status">Opening ground connection…</p>}><GroundConnection run={run} /></Suspense>
+        <button disabled={busy} onClick={exportRun}>Export ground-review packet (JSON)</button>
+        <label className="share-wellbeing"><input type="checkbox" disabled={busy} checked={shareSetting ?? Boolean(run.shareWellbeing)}
+          onChange={e => { const share = e.target.checked; setShareSetting(share); void commit({ ...run, shareWellbeing: share }).then(() => setShareSetting(null)) }}/>Include my latest wellbeing summary in future shared reports</label>
+        <p className="help">Includes the latest daily answer, mood and attention summary. Raw game responses stay on this tablet. Earlier shared snapshots remain unchanged.</p>
+        <Suspense fallback={<p>Opening demo exchange…</p>}><CrewExchange run={run} recordBusy={busy} initialSource={exchangeSource}/></Suspense>
+        <Suspense fallback={<p role="status">Opening ground connection…</p>}><GroundConnection run={run} recordBusy={busy}/></Suspense>
       </section>}
 
       <details className="demo-controls"><summary>Demo controls <span>Scenario {run.scenario} · Synthetic data</span></summary>
         <div className="controls-body">
           <label>Load a separate scenario<select disabled={busy} value={run.scenario} onChange={e => {
-            void commit(createRun(e.target.value as Scenario)).then(ok => { if (ok) { setView('Today'); setNote(''); setMeasurement('') } })
+            void commit(restartRun(e.target.value as Scenario, run)).then(ok => { if (ok) { setView('Today'); setNote(''); setMeasurement('') } })
           }}>{Object.entries(scenarioNames).map(([id, name]) => <option key={id} value={id}>{id} · {name}</option>)}</select></label>
           <label>Replay time · {time(run.now)} UTC<input aria-label="Replay time" type="range" min="0" max={Math.max(2700, (Date.parse(run.now) - Date.parse('2027-07-18T13:30:00Z')) / 1000)} step="5" disabled={busy}
             value={replaySeconds ?? (Date.parse(run.now) - Date.parse('2027-07-18T13:30:00Z')) / 1000}
@@ -424,7 +479,7 @@ export default function App() {
             }}>Simulate multi-indicator changes</button>
           </div>
           {reset && <div className="reset-confirm"><p>Start a fresh Scenario {run.scenario}? The existing replay stays saved in History.</p>
-            <button disabled={busy} onClick={() => void commit(createRun(run.scenario)).then(ok => { if (ok) { setReset(false); setView('Today') } })}>Start fresh</button>
+            <button disabled={busy} onClick={() => void commit(restartRun(run.scenario, run)).then(ok => { if (ok) { setReset(false); setView('Today') } })}>Start fresh</button>
             <button onClick={() => setReset(false)}>Cancel</button></div>}
           <p className="help">Sensor controls change connection state only. Add a fresh manual measurement in Self-check to update the reading. The mission date is fictional: 18 July 2027.</p>
         </div>

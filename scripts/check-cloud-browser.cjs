@@ -47,7 +47,8 @@ async function main() {
       if (id) return reply(200, stored.get(id) ?? null)
       const token = request.headers().authorization?.replace('Bearer ', '')
       const owner = token ? JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString()).sub : null
-      return reply(200, [...stored.values()].filter(row => row.owner_id === owner))
+      return reply(200, [...stored.values()].filter(row => row.owner_id === owner &&
+        (!url.searchParams.has('or') || row.report.kind !== 'ground_response')))
     })
     const page = await context.newPage()
     const errors = []
@@ -98,7 +99,7 @@ async function main() {
     await page.getByRole('button', { name: 'Today', exact: true }).click()
     await page.getByRole('button', { name: 'Handoff · Pending', exact: true }).click()
     await page.getByText('Ground connection and queued packets', { exact: true }).click()
-    await page.getByRole('status').filter({ hasText: 'Stored on server.' }).waitFor()
+    await page.getByText(/UTC snapshot · Stored on server/).waitFor()
     assert.equal(postedIds.length, 2, 'Existing server packet must not be inserted twice')
 
     // Switch account in another tab while A has a request in flight.
@@ -130,6 +131,29 @@ async function main() {
     assert.equal(stored.get(bPacket).owner_id, userB)
     await page.locator('.archived-packet').first().waitFor()
     assert.equal(await page.locator('.archived-packet').count(), 1, 'Only account B archive should be displayed')
+    await page.getByRole('button', { name: 'Open Ground Review', exact: true }).click()
+    await page.getByLabel('Inbox source', { exact: true }).selectOption('cloud')
+    await page.getByRole('button', { name: 'Confirm snapshot viewed', exact: true }).waitFor()
+    await page.getByLabel('Follow-up message').fill('Cloud request: please share a fresh resting measurement.')
+    await page.getByRole('button', { name: 'Request crew update', exact: true }).click()
+    await page.getByText('Response stored in the cloud inbox.', { exact: true }).waitFor()
+    const cloudReply = [...stored.values()].find(row => row.report.kind === 'ground_response')
+    assert.equal(cloudReply.owner_id, userB)
+    assert.equal(cloudReply.report.response.packetId, bPacket)
+    // More than ten reply envelopes must not displace the crew snapshot.
+    for (let i = 0; i < 12; i++) stored.set('extra-reply-' + i, { ...cloudReply, id: 'extra-reply-' + i })
+    await page.getByRole('button', { name: 'Crew tablet', exact: true }).click()
+    await page.getByText('Ground connection and queued packets', { exact: true }).click()
+    await page.getByRole('button', { name: 'Refresh server archive', exact: true }).click()
+    await page.locator('.archived-packet').waitFor()
+    assert.equal(await page.locator('.archived-packet').count(), 1)
+    await page.getByLabel('Ground responses from', { exact: true }).selectOption('cloud')
+    await page.locator('.ground-response').first().getByText('Cloud request: please share a fresh resting measurement.', { exact: true }).waitFor()
+    await page.getByRole('button', { name: 'Open Ground Review', exact: true }).click()
+    await page.getByLabel('Inbox source', { exact: true }).selectOption('cloud')
+    await page.getByRole('button', { name: 'Sign out', exact: true }).click()
+    await page.getByRole('button', { name: 'Sign in to ground inbox', exact: true }).waitFor()
+    assert.equal(await page.getByText('Cloud request: please share a fresh resting measurement.', { exact: true }).count(), 0)
     assert.deepEqual(errors, [])
     console.log('PASS: mocked cloud transport; offline queue/reopen, reconnect retry, stable IDs, lost-receipt recovery, readable archive and account-switch retry.')
   } finally { await browser.close() }

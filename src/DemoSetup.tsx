@@ -3,9 +3,10 @@ import { scenarioNames } from './scenarios'
 import { defaultDemoSettings, scenarioDescriptions, type DemoSettings } from './demoSettings'
 import type { Scenario } from './core'
 
-export default function DemoSetup({ currentScenario, settings, busy, onStart, onClose }: {
+export default function DemoSetup({ currentScenario, settings, busy, onStart, onClose, onLoadTeam }: {
   currentScenario: Scenario; settings: DemoSettings; busy: boolean
   onStart: (settings: DemoSettings) => void; onClose: () => void
+  onLoadTeam: () => void
 }) {
   const [scenario, setScenario] = useState(currentScenario)
   const [resume, setResume] = useState(settings.resumeLastRun)
@@ -30,6 +31,8 @@ export default function DemoSetup({ currentScenario, settings, busy, onStart, on
         </select><p className="help" id={reloadHintId}>Applies to this browser, including offline launches.</p></div>
         <div className="button-row"><button className="primary" type="submit">Start selected setup</button>
           <button type="button" onClick={() => onStart({ ...defaultDemoSettings })}>Restore app defaults</button></div>
+        <div className="team-demo-start"><button type="button" onClick={onLoadTeam}>Load team demonstration</button>
+          <p className="help">Create four separate crew profiles and share three snapshots in the local demo inbox. The fourth member starts without a received report. Existing runs remain saved.</p></div>
       </fieldset>
     </form>
     <p className="help">Default app starts with routine readings and resumes on reload. Starting a setup saves your startup choices. Saved reports and the ground-archive sign-in are kept.</p>

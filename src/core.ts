@@ -30,6 +30,9 @@ export interface CrewEvent {
   severity?: 'mild' | 'moderate' | 'severe' | 'unsure'
 }
 export interface Run {
+  crewId?: string
+  demoBatchId?: string
+  shareWellbeing?: boolean
   dailyCheckIns?: import('./wellbeing').DailyCheckIn[]
   attentionSessions?: import('./wellbeing').AttentionSession[]
   moodCheckIns?: import('./breakRound').MoodCheckIn[]
