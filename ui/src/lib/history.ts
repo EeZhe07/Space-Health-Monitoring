@@ -1,0 +1,37 @@
+// Synthetic mission history for CM-2, mission days 111–140, matching the team's
+// scenarios (mission day 140 = 2027-07-18). Seeded, so it's identical on every load.
+// Story: sleep slips over the last week, mood follows, a solar event spikes
+// radiation on day 133, and blood pressure creeps up slightly.
+
+import type { IndicatorId, Reading } from "./indicators";
+
+export const TODAY = 140;
+export const FIRST_DAY = 111;
+const DAY0 = Date.parse("2027-07-18T00:00:00Z") - TODAY * 86_400_000;
+
+export const dayToIso = (day: number, hour: number) => new Date(DAY0 + day * 86_400_000 + hour * 3_600_000).toISOString();
+
+function rng(seed: number) {
+  return () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+}
+
+export function syntheticHistory(): Reading[] {
+  const r = rng(42);
+  const n = (mean: number, spread: number) => mean + (r() - 0.5) * 2 * spread;
+  const out: Reading[] = [];
+  const push = (indicator: IndicatorId, day: number, hour: number, value: number, value2?: number) =>
+    out.push({ id: `SYN-${indicator}-${day}`, indicator, value, value2, at: dayToIso(day, hour), missionDay: day, source: "synthetic" });
+
+  for (let d = FIRST_DAY; d <= TODAY; d++) {
+    const late = Math.max(0, d - 133); // last week
+    push("sleep", d, 6, Math.max(4.5, n(7.4 - late * 0.27, 0.35)));
+    push("heart_rate", d, 7, n(61 + late * 0.8, 3));
+    push("blood_pressure", d, 7.2, n(116 + (d - FIRST_DAY) * 0.35, 4), n(75 + (d - FIRST_DAY) * 0.2, 3));
+    if (d === TODAY) continue; // today's remaining checks are still due
+    push("blood_sugar", d, 7.4, n(88, 7));
+    push("temperature", d, 7.5, d === 124 ? 37.6 : n(36.7, 0.25));
+    push("mood", d, 20, Math.round(Math.min(5, Math.max(1, n(4.4 - late * 0.22, 0.5)))));
+    push("radiation", d, 22, d === 133 ? 1.62 : d === 134 ? 0.96 : n(0.48, 0.07));
+  }
+  return out;
+}
