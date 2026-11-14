@@ -32,7 +32,7 @@ const regions: Region[] = [
     does: "Turn light into the signals you see with.",
     inSpace: "Fluid shifting toward the head can swell the optic nerve and flatten the back of the eye, blurring vision on long missions.",
     indicators: [],
-    routine: "Weekly vision check with the eye chart and the onboard imaging device. Report any blurring straight away.",
+    routine: "Checked by the crew medical officer with an eye chart and the onboard ultrasound. Report any blurring straight away.",
   },
   {
     id: "heart",

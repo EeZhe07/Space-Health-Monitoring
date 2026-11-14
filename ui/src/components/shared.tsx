@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
 import { motion } from "motion/react";
 import { AnimatedNumber, BeatingHeart, EcgTrace, SplitText } from "./motion";
-import { AlertTriangle, CheckCircle2, Eye, MessageSquareShare, Send, Users } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CircleHelp, Eye, MessageSquareShare, Plug, Send, Unplug, Users } from "lucide-react";
 import { indicators, levelMeta, type IndicatorId, type Level, type Reading } from "@/lib/indicators";
 import { useNow, useStore } from "@/lib/store";
 import { formatDelay } from "@/lib/environments";
 import { go } from "@/lib/router";
 import { cn } from "@/lib/utils";
+import { assessRestingValue, restingRef, thresholds } from "@/lib/teamData";
 
 export function Page({ title, intro, aside, children }: { title: string; intro: string; aside?: ReactNode; children: ReactNode }) {
   return (
@@ -14,14 +15,14 @@ export function Page({ title, intro, aside, children }: { title: string; intro: 
       <header className="mb-8 flex flex-wrap items-end justify-between gap-6">
         <div>
           <h1 className="text-white text-3xl sm:text-4xl lg:text-6xl font-black leading-[1.04] tracking-[-0.04em]">
-            <SplitText text={title} delay={0.08} stagger={0.06} />
+            <SplitText text={title} delay={0} stagger={0.025} />
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/70">
-            <SplitText text={intro} delay={0.35} stagger={0.015} />
+            <SplitText text={intro} delay={0.1} stagger={0.006} />
           </p>
         </div>
         {aside && (
-          <motion.div initial={{ opacity: 0, y: 12, filter: "blur(6px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }} transition={{ duration: 0.7, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}>
+          <motion.div initial={{ opacity: 0, y: 12, filter: "blur(6px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }} transition={{ duration: 0.35, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}>
             {aside}
           </motion.div>
         )}
@@ -33,7 +34,15 @@ export function Page({ title, intro, aside, children }: { title: string; intro: 
 
 const levelIcon = { steady: CheckCircle2, watch: Eye, act: AlertTriangle };
 
-export function LevelBadge({ level, className }: { level: Level | null; className?: string }) {
+export function LevelBadge({ level, unknown = false, className }: { level: Level | null; unknown?: boolean; className?: string }) {
+  if (unknown)
+    return (
+      <span className={cn("relative inline-flex items-center gap-1.5 overflow-hidden rounded-full border border-watch/50 px-2.5 py-1 text-xs font-semibold text-watch", className)}>
+        <span className="hatch absolute inset-0 opacity-30" aria-hidden />
+        <CircleHelp size={13} className="relative" aria-hidden />
+        <span className="relative">Unknown</span>
+      </span>
+    );
   if (!level) return <span className={cn("inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs text-white/70", className)}>Not logged</span>;
   const m = levelMeta[level];
   const Icon = levelIcon[level];
@@ -110,10 +119,11 @@ export function Escalate({ id, level }: { id: IndicatorId; level: Level | null }
 }
 
 export function IndicatorDetail({ id, compact = false }: { id: IndicatorId; compact?: boolean }) {
-  const { latest, levelOf } = useStore();
+  const { latest, levelOf, freshness, setOffline, offline } = useStore();
   const ind = indicators[id];
   const r = latest(id);
   const level = levelOf(id);
+  const fresh = freshness(id);
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -123,9 +133,30 @@ export function IndicatorDetail({ id, compact = false }: { id: IndicatorId; comp
             {r ? `${r.source === "crew_input" ? "Entered by you" : ind.source}, mission day ${r.missionDay}, ${r.at.slice(11, 16)}` : ind.auto ? `Waiting for the ${ind.source.toLowerCase()}` : "Not checked in yet today"}
           </p>
         </div>
-        <LevelBadge level={level} />
+        <LevelBadge level={level} unknown={fresh.unknown} />
       </div>
-      {r && (
+      {fresh.unknown && (
+        <div className="relative overflow-hidden rounded-2xl border border-watch/40 p-4">
+          <span className="hatch absolute inset-0 opacity-10" aria-hidden />
+          <div className="relative">
+            <p className="flex items-center gap-2 text-sm font-semibold text-watch">
+              <Unplug size={15} aria-hidden /> We can't confirm your {ind.name.toLowerCase()} right now
+            </p>
+            <p className="mt-1 text-sm text-white/85">
+              {fresh.reason}.{r ? ` The last trusted reading was ${ind.format(r)} ${ind.unit} at ${r.at.slice(11, 16)}; treat it as history, not as how you are now.` : ""}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <p className="basis-full text-sm text-white/70">Reattach or replace the sensor, or ask a crewmate to help. The reading fills in again by itself.</p>
+              {offline[id] && (
+                <button type="button" onClick={() => setOffline(id, false)} className="liquid-glass inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white hover:bg-white/5 transition-colors">
+                  <Plug size={14} aria-hidden /> Sensor reconnected
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {r && !fresh.unknown && (
         <p className="tabular">
           <Value r={r} id={id} className="text-5xl font-black tracking-[-0.04em]" /> <span className="text-white/60">{ind.unit}</span>
           <span className="ml-3 text-sm text-white/60">
@@ -136,16 +167,33 @@ export function IndicatorDetail({ id, compact = false }: { id: IndicatorId; comp
       {id !== "radiation" && (
         <div className="flex flex-wrap gap-x-6 gap-y-1 rounded-xl bg-white/6 px-4 py-3 text-sm">
           <span>
-            <span className="text-white/60">Pre-flight baseline </span>
+            <span className="text-white/60">{id === "heart_rate" ? "Your normal " : "Pre-flight baseline "}</span>
             <span className="font-semibold tabular">
               {ind.format(ind.baseline)} {ind.unit}
             </span>
           </span>
           {baselineDelta(id, r) && <span className="text-white/80">{baselineDelta(id, r)}</span>}
-          <span className="basis-full text-xs text-white/50">From your NASA pre-flight medical exam</span>
+          <span className="basis-full text-xs text-white/50">
+            {id === "heart_rate" && restingRef
+              ? `Median of ${restingRef.n_used} resting readings, mission days ${restingRef.window_days[0]}-${restingRef.window_days[1]}`
+              : "From your NASA pre-flight medical exam"}
+          </span>
+          {id === "heart_rate" && r && !fresh.unknown && (
+            <span className="basis-full pt-1 text-sm text-white/85">{assessRestingValue(r.value, r.at)?.reason}</span>
+          )}
+          {id === "heart_rate" && (
+            <span className="basis-full text-xs text-white/50">
+              Exercise zone {thresholds.exercise_hr_zone.zone_bpm[0]}-{thresholds.exercise_hr_zone.zone_bpm[1]} bpm ({thresholds.exercise_hr_zone.zone_percent_of_max[0]}-{thresholds.exercise_hr_zone.zone_percent_of_max[1]}% of max, NASA ISS guidance)
+            </span>
+          )}
         </div>
       )}
-      {id === "heart_rate" && r && <HeartStrip bpm={r.value} />}
+      {id === "heart_rate" && r && !fresh.unknown && <HeartStrip bpm={r.value} />}
+      {ind.auto && !offline[id] && (
+        <button type="button" onClick={() => setOffline(id, true)} className="self-start text-xs text-white/50 underline decoration-white/20 hover:text-white">
+          Demo: simulate the {ind.source.toLowerCase()} disconnecting
+        </button>
+      )}
       {level && (
         <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }} className={cn("rounded-2xl p-4", levelMeta[level].bg)}>
           <p className={cn("text-sm font-semibold", levelMeta[level].text)}>What to do now</p>
@@ -192,6 +240,11 @@ export const latestValue = (r: Reading | undefined, id: IndicatorId) => (r ? ind
 export function baselineDelta(id: IndicatorId, r: Reading | undefined) {
   if (!r || id === "radiation") return null;
   const ind = indicators[id];
+  // Heart rate uses the team's rule: percent change from your normal.
+  if (id === "heart_rate") {
+    const pct = Math.round(((r.value - ind.baseline.value) / ind.baseline.value) * 100);
+    return pct === 0 ? "At your normal" : `${pct > 0 ? "+" : ""}${pct}% vs your normal`;
+  }
   const d = r.value - ind.baseline.value;
   if (Math.abs(d) < (ind.chart[1] - ind.chart[0]) * 0.015) return "At your baseline";
   const step = id === "temperature" || id === "sleep" ? d.toFixed(1) : String(Math.round(d));

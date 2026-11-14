@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { indicators, indicatorList, type IndicatorId, type Level, type Reading } from "./indicators";
 import { environments, type Environment, type EnvironmentId } from "./environments";
-import { syntheticHistory, TODAY, dayToIso } from "./history";
+import { syntheticHistory, TODAY, dayToIso, NOW_ISO } from "./history";
+import { computeAlerts, type TrendAlert } from "./trends";
 
 export interface Message {
   id: string;
@@ -27,14 +28,31 @@ interface Store {
   xp: number;
   level: number;
   streak: number;
-  badges: { id: string; name: string; detail: string; earned: boolean }[];
   messages: Message[];
   sendMessage: (about: Message["about"], text: string) => void;
   resetDemo: () => void;
+  /** Sensors reported offline, with the time they dropped. */
+  offline: Partial<Record<IndicatorId, string>>;
+  setOffline: (id: IndicatorId, on: boolean) => void;
+  /** Whether the current value can be trusted, and why not. */
+  freshness: (id: IndicatorId) => { unknown: boolean; reason: string | null };
+  alerts: TrendAlert[];
+  plan: Record<string, boolean>;
+  togglePlan: (id: string) => void;
+  waterMl: number;
+  addWater: (ml: number) => void;
+  /** Emergency screen: one tap, opens instantly and alerts crew and ground. */
+  emergency: { open: boolean; startedAt: number };
+  startEmergency: () => void;
+  endEmergency: () => void;
 }
 
 const Ctx = createContext<Store | null>(null);
 const KEY = "crew-health-demo-v1";
+// Stored on its own key. v2 resets everyone to "animations on" once, because the
+// old unlabelled pause button was easy to switch off without noticing.
+const MOTION_KEY = "crew-health-motion-v2";
+const savedMotion = (): MotionPref => (localStorage.getItem(MOTION_KEY) === "reduced" ? "reduced" : "full");
 
 const base = syntheticHistory();
 
@@ -46,16 +64,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return {};
     }
   }, []);
-  if (typeof document !== "undefined") document.documentElement.dataset.motion = saved.motionPref ?? "full";
+  if (typeof document !== "undefined") document.documentElement.dataset.motion = savedMotion();
   const [envId, setEnvId] = useState<EnvironmentId>(saved.envId ?? "station");
   const [mine, setMine] = useState<Reading[]>(saved.mine ?? []);
   const [messages, setMessages] = useState<Message[]>(saved.messages ?? []);
+  // Demo: the glucose monitor dropped out this morning, so one card shows "Unknown".
+  const [offline, setOfflineMap] = useState<Partial<Record<IndicatorId, string>>>(saved.offline ?? { blood_sugar: dayToIso(TODAY, 7 + 40 / 60) });
+  const [plan, setPlan] = useState<Record<string, boolean>>(saved.plan ?? { resistance: true });
+  const [waterMl, setWaterMl] = useState<number>(saved.waterMl ?? 1000);
+  const [emergency, setEmergency] = useState({ open: false, startedAt: 0 });
   // Animation is on by default; crew can switch it off in the navbar.
-  const [motionPref, setMotionPref] = useState<MotionPref>(saved.motionPref ?? "full");
+  const [motionPref, setMotionPref] = useState<MotionPref>(savedMotion);
 
   useEffect(() => {
-    localStorage.setItem(KEY, JSON.stringify({ envId, mine, messages, motionPref }));
-  }, [envId, mine, messages, motionPref]);
+    localStorage.setItem(KEY, JSON.stringify({ envId, mine, messages, offline, plan, waterMl }));
+  }, [envId, mine, messages, offline, plan, waterMl]);
+
+  useEffect(() => {
+    localStorage.setItem(MOTION_KEY, motionPref);
+  }, [motionPref]);
 
   useEffect(() => {
     document.documentElement.dataset.motion = motionPref;
@@ -69,24 +96,33 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [mine, env]);
 
   const latest = (id: IndicatorId) => readings.findLast((r) => r.indicator === id);
+  // A value is only trusted if its sensor is online (or it was entered by hand
+  // after the sensor dropped) and it is less than a day old.
+  const freshness = (id: IndicatorId) => {
+    const ind = indicators[id];
+    const r = latest(id);
+    const since = offline[id];
+    if (ind.auto && since && !(r && r.source === "crew_input" && r.at > since)) {
+      return { unknown: true, reason: `${ind.source} disconnected at ${since.slice(11, 16)}` };
+    }
+    if (r && Date.parse(NOW_ISO) - Date.parse(r.at) > 30 * 3_600_000) {
+      return { unknown: true, reason: `No reading for ${Math.round((Date.parse(NOW_ISO) - Date.parse(r.at)) / 3_600_000)} h` };
+    }
+    return { unknown: false, reason: null };
+  };
   const levelOf = (id: IndicatorId) => {
     const r = latest(id);
-    return r ? indicators[id].level(r) : null;
+    if (!r || freshness(id).unknown) return null;
+    return indicators[id].level(r);
   };
+  const alerts = useMemo(() => computeAlerts(readings), [readings]);
   const dueToday = indicatorList.map((i) => i.id).filter((id) => !readings.some((r) => r.indicator === id && r.missionDay === TODAY));
-
-  // Gamification: XP for every check-in, streak of complete days, a few badges.
-  const xp = 1240 + mine.length * 25;
+  // Gamification: XP for activity and a streak of days with the prevention plan done.
+  const xp = 1240 + mine.length * 25 + Object.values(plan).filter(Boolean).length * 10;
   const level = Math.floor(xp / 500) + 1;
-  const streak = 12 + (dueToday.length === 0 ? 1 : 0);
-  const badges = [
-    { id: "streak7", name: "Steady orbit", detail: "7 days of complete check-ins", earned: true },
-    { id: "first-log", name: "First entry", detail: "Log a measurement yourself", earned: mine.length > 0 },
-    { id: "full-day", name: "Full sweep", detail: "Finish every check-in today", earned: dueToday.length === 0 },
-    { id: "surgeon", name: "Kept ground in the loop", detail: "Send a flight surgeon update", earned: messages.length > 0 },
-    { id: "streak30", name: "Long haul", detail: "30-day streak", earned: false },
-  ];
-
+  // The daily habits that count toward the streak.
+  const planDone = ["resistance", "cardio", "sleep-window"].every((k) => plan[k]) && waterMl >= 2500;
+  const streak = 12 + (planDone ? 1 : 0);
   const value: Store = {
     motionPref,
     setMotionPref,
@@ -94,7 +130,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setEnv: setEnvId,
     readings,
     addReading: (indicator, value, value2) => {
-      const hour = 7 + mine.filter((m) => m.missionDay === TODAY).length * 0.5;
+      // Hand entries are stamped "now" (ship time), a minute apart.
+      const hour = 14 + 10 / 60 + mine.filter((m) => m.missionDay === TODAY).length / 60;
       const r: Reading = { id: `CREW-${Date.now().toString(36)}`, indicator, value, value2, at: dayToIso(TODAY, hour), missionDay: TODAY, source: "crew_input" };
       setMine((m) => [...m, r]);
       return r;
@@ -105,7 +142,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     xp,
     level,
     streak,
-    badges,
     messages,
     sendMessage: (about, text) => {
       const now = Date.now();
@@ -114,7 +150,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     resetDemo: () => {
       setMine([]);
       setMessages([]);
+      setOfflineMap({ blood_sugar: dayToIso(TODAY, 7 + 40 / 60) });
+      setPlan({ resistance: true });
+      setWaterMl(1000);
     },
+    offline,
+    setOffline: (id, on) =>
+      setOfflineMap((m) => {
+        const next = { ...m };
+        if (on) next[id] = NOW_ISO;
+        else delete next[id];
+        return next;
+      }),
+    freshness,
+    alerts,
+    plan,
+    togglePlan: (id) => setPlan((p) => ({ ...p, [id]: !p[id] })),
+    waterMl,
+    addWater: (ml) => setWaterMl((w) => Math.max(0, Math.min(4000, w + ml))),
+    emergency,
+    startEmergency: () => setEmergency((e) => (e.open ? e : { open: true, startedAt: Date.now() })),
+    endEmergency: () => setEmergency({ open: false, startedAt: 0 }),
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
