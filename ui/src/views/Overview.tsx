@@ -6,7 +6,7 @@ import { indicatorList, indicators, levelMeta, type IndicatorId, type Level } fr
 import { useStore } from "@/lib/store";
 import { formatDelay } from "@/lib/environments";
 import { TODAY } from "@/lib/history";
-import { HeartStrip, IndicatorDetail, LevelBadge, Page, Sparkline, Value } from "@/components/shared";
+import { HeartStrip, IndicatorDetail, LevelBadge, Page, Sparkline, Value, baselineDelta } from "@/components/shared";
 import { cn } from "@/lib/utils";
 
 export function Overview() {
@@ -26,7 +26,7 @@ export function Overview() {
   return (
     <Page
       title={summary}
-      intro={`CM-2, mission day ${TODAY}. ${dueToday.length ? `${dueToday.length} check-ins still due today.` : "All of today's check-ins are done."} Select any indicator for what it means and what to do.`}
+      intro={`CM-2, mission day ${TODAY}. Readings stream in from your suit sensors and are compared with your pre-flight baseline from NASA's medical exams. Select any indicator for what it means and what to do.`}
       aside={
         <div className="panel flex gap-6 px-5 py-4 text-sm">
           <Stat icon={Globe2} label="Environment" value={env.name} />
@@ -63,8 +63,9 @@ export function Overview() {
                     <span className="text-sm text-white/60">{ind.unit}</span>
                   </p>
                   {ind.id === "heart_rate" && r ? <HeartStrip bpm={r.value} className="mt-3 h-10" /> : <Sparkline id={ind.id} className="mt-3" />}
-                  <p className={cn("mt-2 text-xs", due ? "text-watch" : "text-white/55")}>
-                    {due ? `Due today: ${ind.scheduleHint.toLowerCase()}` : `Logged day ${r?.missionDay}`}
+                  <p className={cn("mt-2 flex justify-between gap-2 text-xs", due ? "text-watch" : "text-white/55")}>
+                    <span>{due ? `Check-in due: ${ind.scheduleHint.toLowerCase()}` : r?.source === "crew_input" ? "Entered by you" : ind.source}</span>
+                    {!due && baselineDelta(ind.id, r) && <span className="text-white/70">{baselineDelta(ind.id, r)}</span>}
                   </p>
                 </motion.button>
               </motion.li>

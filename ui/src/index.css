@@ -330,7 +330,3 @@
 @keyframes badge-pulse { 0%, 100% { box-shadow: 0 0 0 2px rgb(8 12 20 / 90%), 0 0 8px rgb(255 107 91 / 40%); } 50% { box-shadow: 0 0 0 2px rgb(8 12 20 / 90%), 0 0 16px rgb(255 107 91 / 80%); } }
 :root[data-motion="reduced"] .nav-glider, :root[data-motion="reduced"] .nav-notification { transition: none; animation: none; }
 
-/* Home layer: fades in/out over the inner pages instead of remounting */
-.home-layer { position: fixed; inset: 0; z-index: 30; opacity: 1; visibility: visible; transition: opacity .75s cubic-bezier(.22,1,.36,1), visibility 0s; }
-.home-layer.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .75s cubic-bezier(.22,1,.36,1), visibility 0s .75s; }
-:root[data-motion="reduced"] .home-layer { transition: none; }

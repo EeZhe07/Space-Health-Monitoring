@@ -33,6 +33,12 @@ export interface Indicator {
   escalate: Partial<Record<Level, "crewmate" | "flight_surgeon">>;
   input: { label: string; min: number; max: number; step: number; placeholder: string }[];
   scheduleHint: string;
+  /** Where in-mission readings come from. */
+  source: string;
+  /** True when a suit sensor sends the reading; false when the crew member reports it. */
+  auto: boolean;
+  /** Personal pre-flight baseline from the crew member's NASA medical exam (synthetic). */
+  baseline: { value: number; value2?: number };
 }
 
 export const indicators: Record<IndicatorId, Indicator> = {
@@ -59,6 +65,9 @@ export const indicators: Record<IndicatorId, Indicator> = {
     escalate: { act: "flight_surgeon", watch: "crewmate" },
     input: [{ label: "Heart rate", min: 25, max: 220, step: 1, placeholder: "e.g. 64" }],
     scheduleHint: "Morning, before exercise",
+    source: "Wrist sensor",
+    auto: true,
+    baseline: { value: 58 },
   },
   blood_pressure: {
     id: "blood_pressure",
@@ -87,6 +96,9 @@ export const indicators: Record<IndicatorId, Indicator> = {
       { label: "Diastolic (bottom)", min: 30, max: 150, step: 1, placeholder: "e.g. 76" },
     ],
     scheduleHint: "Morning, seated and rested",
+    source: "Automatic arm cuff",
+    auto: true,
+    baseline: { value: 114, value2: 74 },
   },
   blood_sugar: {
     id: "blood_sugar",
@@ -111,6 +123,9 @@ export const indicators: Record<IndicatorId, Indicator> = {
     escalate: { act: "flight_surgeon" },
     input: [{ label: "Blood sugar", min: 20, max: 500, step: 1, placeholder: "e.g. 88" }],
     scheduleHint: "Before breakfast",
+    source: "Continuous glucose monitor",
+    auto: true,
+    baseline: { value: 86 },
   },
   temperature: {
     id: "temperature",
@@ -134,6 +149,9 @@ export const indicators: Record<IndicatorId, Indicator> = {
     escalate: { act: "flight_surgeon", watch: "crewmate" },
     input: [{ label: "Temperature", min: 30, max: 43, step: 0.1, placeholder: "e.g. 36.7" }],
     scheduleHint: "Morning",
+    source: "Skin temperature patch",
+    auto: true,
+    baseline: { value: 36.6 },
   },
   sleep: {
     id: "sleep",
@@ -157,6 +175,9 @@ export const indicators: Record<IndicatorId, Indicator> = {
     escalate: { act: "crewmate" },
     input: [{ label: "Hours slept", min: 0, max: 16, step: 0.25, placeholder: "e.g. 7.5" }],
     scheduleHint: "On waking",
+    source: "Sleep tracker",
+    auto: true,
+    baseline: { value: 7.6 },
   },
   mood: {
     id: "mood",
@@ -177,6 +198,9 @@ export const indicators: Record<IndicatorId, Indicator> = {
     escalate: { act: "flight_surgeon" },
     input: [{ label: "Mood", min: 1, max: 5, step: 1, placeholder: "1 to 5" }],
     scheduleHint: "Evening",
+    source: "Daily check-in",
+    auto: false,
+    baseline: { value: 4 },
   },
   radiation: {
     id: "radiation",
@@ -197,6 +221,9 @@ export const indicators: Record<IndicatorId, Indicator> = {
     escalate: { act: "flight_surgeon", watch: "crewmate" },
     input: [{ label: "Dose today", min: 0, max: 50, step: 0.01, placeholder: "e.g. 0.45" }],
     scheduleHint: "End of day",
+    source: "Personal dosimeter",
+    auto: true,
+    baseline: { value: 0.45 },
   },
 };
 

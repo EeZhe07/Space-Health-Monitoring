@@ -119,7 +119,9 @@ export function IndicatorDetail({ id, compact = false }: { id: IndicatorId; comp
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-lg font-black tracking-tight">{ind.name}</h3>
-          <p className="mt-1 text-sm text-white/60">{r ? `Last logged mission day ${r.missionDay}, ${r.at.slice(11, 16)}` : "Not logged yet"}</p>
+          <p className="mt-1 text-sm text-white/60">
+            {r ? `${r.source === "crew_input" ? "Entered by you" : ind.source}, mission day ${r.missionDay}, ${r.at.slice(11, 16)}` : ind.auto ? `Waiting for the ${ind.source.toLowerCase()}` : "Not checked in yet today"}
+          </p>
         </div>
         <LevelBadge level={level} />
       </div>
@@ -130,6 +132,18 @@ export function IndicatorDetail({ id, compact = false }: { id: IndicatorId; comp
             Steady range {ind.band[0]}–{ind.band[1]} {ind.unit}
           </span>
         </p>
+      )}
+      {id !== "radiation" && (
+        <div className="flex flex-wrap gap-x-6 gap-y-1 rounded-xl bg-white/6 px-4 py-3 text-sm">
+          <span>
+            <span className="text-white/60">Pre-flight baseline </span>
+            <span className="font-semibold tabular">
+              {ind.format(ind.baseline)} {ind.unit}
+            </span>
+          </span>
+          {baselineDelta(id, r) && <span className="text-white/80">{baselineDelta(id, r)}</span>}
+          <span className="basis-full text-xs text-white/50">From your NASA pre-flight medical exam</span>
+        </div>
       )}
       {id === "heart_rate" && r && <HeartStrip bpm={r.value} />}
       {level && (
@@ -173,6 +187,16 @@ export function Explainer({ id }: { id: IndicatorId }) {
 }
 
 export const latestValue = (r: Reading | undefined, id: IndicatorId) => (r ? indicators[id].format(r) : "–");
+
+/** How a reading compares with the crew member's pre-flight baseline, e.g. "+8 vs baseline". */
+export function baselineDelta(id: IndicatorId, r: Reading | undefined) {
+  if (!r || id === "radiation") return null;
+  const ind = indicators[id];
+  const d = r.value - ind.baseline.value;
+  if (Math.abs(d) < (ind.chart[1] - ind.chart[0]) * 0.015) return "At your baseline";
+  const step = id === "temperature" || id === "sleep" ? d.toFixed(1) : String(Math.round(d));
+  return `${d > 0 ? "+" : ""}${step} ${ind.unit} vs baseline`;
+}
 
 /** Indicator value that counts smoothly when it changes. */
 export function Value({ r, id, className }: { r: Reading | undefined; id: IndicatorId; className?: string }) {

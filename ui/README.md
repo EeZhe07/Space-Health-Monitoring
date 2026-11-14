@@ -15,21 +15,14 @@ Open http://localhost:5173.
 
 ## What's on screen
 
-- **Home**: the way in. After a 3-second Mars-approach intro, a tilting window
-  (follows the pointer) sits in the middle of the screen. **Press and hold** it:
-  a glowing ring traces around the window while a pulse readout syncs, then the
-  window expands to fill the screen and opens Vitals. Let go early and it rewinds.
-  Space/Enter work too, and "Enter without holding" is always available. Below,
-  a "Today" summary (check-ins due, what needs attention, streak, ground delay)
-  links straight to each page. Code: `src/views/PortalHome.tsx`,
-  `src/views/portal.css`. The videos stream from a CDN, so Home needs internet.
+- **Status (first page)**: opens straight onto the crew member's health status.
+  No welcome page and no setup: each person's pre-flight baseline comes from
+  NASA's medical exams, and in-mission readings stream in from suit sensors
+  (wrist sensor, arm cuff, glucose monitor, skin patch, sleep tracker,
+  dosimeter). Every card shows its source and how it compares with the baseline.
 - **Inner pages** sit over an animated space scene drawn in code
   (`src/components/SpaceScene.tsx`) with a 3D starfield from React Bits
   Particles: it drifts in depth, shifts with the cursor and ripples on click.
-- **Particle title** (React Bits ParticleText, Inter Black): Home's "TODAY"
-  gathers from particles, scatters from the cursor, bursts on click and re-forms
-  on hover. Page titles are solid Inter Black with a word-by-word reveal.
-  Code: `src/components/ParticleText/` (adds `align` and `maxParticles` props).
 - **Motion**: numbers count up, the heart beats and an ECG trace scrolls at the
   logged heart rate, charts draw in, cards stagger in, pages cross-fade.
   Titles reveal word by word and labels cross-fade. Animation is on by default;
@@ -43,7 +36,8 @@ Open http://localhost:5173.
 - **Vitals → Trends**: 30 mission days per indicator with the steady band shaded.
 - **Vitals → Live check**: the team's heart-rate scenarios (validity window,
   sensor drops, symptoms, crew handoff) replayed minute by minute.
-- **Routine**: today's checklist, guided measurement entry, XP and streak, plus a
+- **Daily check-in** (Routine): the evening mood check-in and exercise; sensor
+  readings can be entered by hand only if a sensor is offline. Also XP and streak, plus a
   holographic **Crew card** (React Bits HoloCard) drawn from live data: readiness
   score, heart rate, the indicator to focus on, weakness/strength, ground delay.
   The foil gets rarer as the streak grows (glitter → stars → cosmos → rainbow) and

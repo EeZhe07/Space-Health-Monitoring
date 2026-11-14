@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Award, Check, Clock, Dumbbell, Flame, Lock, RotateCcw, Sparkles } from "lucide-react";
+import { Award, Check, Clock, Dumbbell, Flame, Lock, Radio, RotateCcw, Sparkles } from "lucide-react";
 import { indicatorList, indicators, levelMeta, type IndicatorId, type Reading } from "@/lib/indicators";
 import { useStore } from "@/lib/store";
 import { TODAY } from "@/lib/history";
@@ -20,8 +20,8 @@ export function Routine() {
 
   return (
     <Page
-      title="Today's check-in"
-      intro={`Mission day ${TODAY}. Work down the list: each check takes a minute or two and comes with instructions. You earn XP for every entry.`}
+      title="Daily check-in"
+      intro={`Mission day ${TODAY}. Your suit sensors log most readings for you. Here you only do the mood check-in and exercise, or enter a reading by hand if a sensor is offline. You earn XP for every entry.`}
       aside={
         <button type="button" onClick={s.resetDemo} className="liquid-glass inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm text-white hover:bg-white/5 transition-colors">
           <RotateCcw size={15} aria-hidden /> Reset demo
@@ -58,7 +58,7 @@ export function Routine() {
                     <span className="min-w-0 flex-1">
                       <span className={cn("block text-sm font-semibold", isDone && "text-white/60 line-through decoration-white/30")}>{ind.name}</span>
                       <span className="flex items-center gap-1 text-xs text-white/55">
-                        <Clock size={11} aria-hidden /> {ind.scheduleHint}
+                        {ind.auto ? <Radio size={11} aria-hidden /> : <Clock size={11} aria-hidden />} {ind.auto ? `Auto: ${ind.source.toLowerCase()}` : ind.scheduleHint}
                       </span>
                     </span>
                     {isDone ? <LevelBadge level={s.levelOf(ind.id)} /> : <span className="text-xs text-watch">Due</span>}
@@ -170,7 +170,13 @@ function LogForm({ id, onDone }: { id: IndicatorId; onDone: () => void }) {
           <motion.form key="form" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} onSubmit={submit} noValidate className="flex flex-col gap-6">
             <div>
               <h2 id="log-title" className="text-2xl font-black tracking-tight">Log {ind.name.toLowerCase()}</h2>
-              <p className="mt-1 text-sm text-white/70">{alreadyDone ? "Already logged today. You can add another reading." : ind.scheduleHint}</p>
+              <p className="mt-1 text-sm text-white/70">
+                {ind.auto
+                  ? `Your ${ind.source.toLowerCase()} sends this automatically. Enter it by hand only if the sensor is offline.`
+                  : alreadyDone
+                    ? "Already checked in today. You can add another entry."
+                    : ind.scheduleHint}
+              </p>
             </div>
             <ol className="flex flex-col gap-3">
               {ind.howTo.map((step, i) => (
@@ -237,7 +243,7 @@ function LogForm({ id, onDone }: { id: IndicatorId; onDone: () => void }) {
             )}
             <div>
               <button type="submit" className="bg-white text-black text-sm sm:text-base font-semibold px-6 py-3 rounded-full hover:bg-white/90 transition-colors">
-                Save reading
+                Save entry
               </button>
               <p className="mt-3 text-xs text-white/50">You'll see right away whether it's steady and what to do next.</p>
             </div>

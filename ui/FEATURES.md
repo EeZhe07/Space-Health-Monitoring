@@ -6,8 +6,8 @@ threshold is an illustrative demo rule, not medical guidance.
 
 | Brief asks for | Where it lives |
 |---|---|
-| Gather health indicators (BP, heart rate, blood sugar, temperature, sleep, mood) through keyboard/mouse input | **Routine → Log a measurement**: guided form per indicator with units and how-to steps |
-| Help astronauts assess their own health | **Vitals → Overview**: every indicator colour-coded (steady / watch / act) with a plain-language reading |
+| Gather health indicators (BP, heart rate, blood sugar, temperature, sleep, mood) | Suit sensors stream readings automatically, compared with each crew member's NASA pre-flight baseline. **Daily check-in** covers the self-reported mood score and a manual fallback when a sensor is offline |
+| Help astronauts assess their own health | **Status** (the first page): every indicator colour-coded (steady / watch / act) with a plain-language reading |
 | Guidance on treatments and health improvements | Each indicator's detail shows *What to do now* for its current status |
 | When a result needs the crew or flight surgeons | Status rules mark *Tell a crewmate* / *Message flight surgeon*; the message shows the comms delay for the current environment |
 | Which measurements can be done in space, why, how hazards affect them | **Guide**: per-indicator *How to measure*, *Why it matters*, *In space* sections, plus the five HRP hazards |

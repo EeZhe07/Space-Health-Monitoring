@@ -9,11 +9,10 @@ import { cn } from "@/lib/utils";
 type NavLink = { label: string; route?: Route; dropdown?: { label: string; route: Route; detail: string }[] };
 
 const navLinks: NavLink[] = [
-  { label: "Home", route: "home" },
+  { label: "Status", route: "home" },
   {
     label: "Vitals",
     dropdown: [
-      { label: "Overview", route: "overview", detail: "Every indicator at a glance" },
       { label: "Body map", route: "body", detail: "Tap a body part to see its status" },
       { label: "Trends", route: "trends", detail: "30 mission days, charted" },
       { label: "Live check", route: "live", detail: "Heart rate replay and crew handoff" },
@@ -23,7 +22,8 @@ const navLinks: NavLink[] = [
   { label: "Guide", route: "guide" },
 ];
 
-const isActive = (l: NavLink, route: Route) => l.route === route || !!l.dropdown?.some((d) => d.route === route);
+const isActive = (l: NavLink, route: Route) =>
+  l.route === route || (l.route === "home" && route === "overview") || !!l.dropdown?.some((d) => d.route === route);
 
 /** Closes a popover on outside click or Escape. */
 function useDismiss(open: boolean, close: () => void) {
@@ -156,7 +156,7 @@ export function Navbar({ route, dockedLogo = false }: { route: Route; dockedLogo
             {envOpen && <EnvMenu onPick={() => setEnvOpen(false)} className="absolute right-0 top-[calc(100%+10px)] w-72" />}
           </div>
           <button type="button" onClick={() => go("routine")} className="bg-white text-black text-sm font-semibold px-4 py-2.5 rounded-full hover:bg-white/90 transition-colors">
-            Begin check-in
+            Daily check-in
           </button>
         </div>
 
@@ -231,7 +231,7 @@ export function Navbar({ route, dockedLogo = false }: { route: Route; dockedLogo
               Guide
             </button>
             <button type="button" onClick={() => navigate("routine")} className="flex-1 bg-white text-black text-sm font-semibold px-4 py-2.5 rounded-full hover:bg-white/90 transition-colors">
-              Begin check-in
+              Daily check-in
             </button>
           </div>
         </div>
