@@ -25,6 +25,13 @@ threshold is an illustrative demo rule, not medical guidance.
 
 ## Built on the team's data work
 
+**Resting heart rate** uses the team's history (`data/history/resting_hr_days_1_140.csv`)
+and rules (`data/rules/thresholds.json`): your normal is the median of mission days
+1–14, and a reading more than 15% above it is flagged. The app reproduces
+`data/rules/resting_assessment_day140.json` exactly (74 bpm, +19.4%, flagged), and
+the detail panel shows the NASA-sourced exercise zone (122–148 bpm).
+
+
 The Live check idea of being honest about what is not known now runs through
 the app: when a sensor drops out, its Status card shows **Unknown** with the
 last trusted value and the reason, instead of an old number.

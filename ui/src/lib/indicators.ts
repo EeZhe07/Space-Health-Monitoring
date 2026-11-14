@@ -1,6 +1,13 @@
 // Health indicators the brief names, with illustrative demo thresholds and
 // plain-language guidance. Not medical advice; values are for the demo only.
 
+import { restingRef, thresholds } from "./teamData";
+
+// Resting heart rate follows the team's rules: personal normal = median of
+// days 1-14, flagged when more than 15% above it (data/rules/thresholds.json).
+const HR_REF = restingRef?.value ?? 62;
+const HR_FLAG = 1 + thresholds.resting_hr_change_flag.flag_if_above_percent / 100;
+
 export type Level = "steady" | "watch" | "act";
 export type IndicatorId = "heart_rate" | "blood_pressure" | "blood_sugar" | "temperature" | "sleep" | "mood" | "radiation";
 
@@ -46,20 +53,20 @@ export const indicators: Record<IndicatorId, Indicator> = {
     id: "heart_rate",
     name: "Resting heart rate",
     unit: "bpm",
-    band: [50, 100],
+    band: [50, Math.round(HR_REF * HR_FLAG)],
     chart: [35, 130],
-    level: ({ value: v }) => (v >= 50 && v <= 100 ? "steady" : v >= 42 && v <= 115 ? "watch" : "act"),
+    level: ({ value: v }) => (v < 42 || v > 115 ? "act" : v > HR_REF * HR_FLAG || v < 50 ? "watch" : "steady"),
     format: ({ value }) => `${Math.round(value)}`,
     howTo: [
       "Sit or float still for 5 minutes before measuring.",
       "Use the wrist sensor, or count your pulse at the wrist for 30 seconds and double it.",
       "Don't measure within 30 minutes of exercise.",
     ],
-    why: "Shows how hard your heart is working at rest. A steady rise over days can point to stress, illness, dehydration or poor sleep.",
+    why: "Shows how hard your heart is working at rest. It is compared with your own normal from the first two weeks of the mission; a rise of more than 15% can point to stress, illness, dehydration or poor sleep.",
     inSpace: "Without gravity, fluid shifts toward your head and the heart has less work to do, so it can lose some fitness. Daily exercise keeps it strong.",
     todo: {
       steady: "Nothing to do. Keep your exercise and sleep routine.",
-      watch: "Rest, drink water and measure again in 30 minutes. Note any symptoms.",
+      watch: "More than 15% above your normal. Rest, drink water and measure again in 30 minutes. Note any symptoms.",
       act: "Stop activity, sit or anchor yourself, and tell a crewmate now. Measure again in 5 minutes.",
     },
     escalate: { act: "flight_surgeon", watch: "crewmate" },
@@ -67,7 +74,7 @@ export const indicators: Record<IndicatorId, Indicator> = {
     scheduleHint: "Morning, before exercise",
     source: "Wrist sensor",
     auto: true,
-    baseline: { value: 58 },
+    baseline: { value: HR_REF },
   },
   blood_pressure: {
     id: "blood_pressure",

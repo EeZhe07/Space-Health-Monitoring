@@ -28,7 +28,7 @@ export function Trends() {
   }, []);
 
   const ind = indicators[id];
-  const rs = readings.filter((r) => r.indicator === id);
+  const rs = readings.filter((r) => r.indicator === id && r.missionDay >= FIRST_DAY);
   const [lo, hi] = ind.chart;
   const iw = Math.max(200, width - M.left - M.right);
   const ih = H - M.top - M.bottom;

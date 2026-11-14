@@ -54,6 +54,13 @@ See [FEATURES.md](FEATURES.md) for how each feature maps to the challenge brief.
 Entries you log are kept in the browser's localStorage; use *Reset demo* on the
 Routine page to clear them.
 
+## Team data and rules
+
+Resting heart rate comes from `data/history/resting_hr_days_1_140.csv` and is
+assessed with `data/rules/thresholds.json` (personal normal = median of days 1–14,
+flag above +15%) in `src/lib/resting.ts`. `npm run check` also compares the app
+with `data/rules/resting_assessment_day140.json`.
+
 ## Rules engine
 
 `src/lib/engine.ts` is a small demo engine that turns readings + events into the

@@ -5,6 +5,7 @@
 // radiation on day 133, and blood pressure creeps up slightly.
 
 import type { IndicatorId, Reading } from "./indicators";
+import { restingReadings } from "./teamData";
 
 export const TODAY = 140;
 export const FIRST_DAY = 111;
@@ -29,7 +30,6 @@ export function syntheticHistory(): Reading[] {
   for (let d = FIRST_DAY; d <= TODAY; d++) {
     const late = Math.max(0, d - 133); // last week
     push("sleep", d, 6, Math.max(4.5, n(7.4 - late * 0.27, 0.35)));
-    push("heart_rate", d, 7, n(61 + late * 0.8, 3));
     push("blood_pressure", d, 7.2, n(116 + (d - FIRST_DAY) * 0.35, 4), n(75 + (d - FIRST_DAY) * 0.2, 3));
     push("blood_sugar", d, 7.4, n(88, 7));
     push("temperature", d, 7.5, d === 124 ? 37.6 : n(36.7, 0.25));
@@ -38,5 +38,6 @@ export function syntheticHistory(): Reading[] {
     // Mood is estimated from heart-rate variability and sleep; nothing is self-reported.
     push("mood", d, d === TODAY ? 6.5 : 20, Math.round(Math.min(5, Math.max(1, n(4.4 - late * 0.22, 0.5)))));
   }
-  return out;
+  // Resting heart rate comes from the team's history file (days 1-140).
+  return [...out, ...restingReadings];
 }

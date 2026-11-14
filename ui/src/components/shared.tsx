@@ -7,6 +7,7 @@ import { useNow, useStore } from "@/lib/store";
 import { formatDelay } from "@/lib/environments";
 import { go } from "@/lib/router";
 import { cn } from "@/lib/utils";
+import { assessRestingValue, restingRef, thresholds } from "@/lib/teamData";
 
 export function Page({ title, intro, aside, children }: { title: string; intro: string; aside?: ReactNode; children: ReactNode }) {
   return (
@@ -166,13 +167,25 @@ export function IndicatorDetail({ id, compact = false }: { id: IndicatorId; comp
       {id !== "radiation" && (
         <div className="flex flex-wrap gap-x-6 gap-y-1 rounded-xl bg-white/6 px-4 py-3 text-sm">
           <span>
-            <span className="text-white/60">Pre-flight baseline </span>
+            <span className="text-white/60">{id === "heart_rate" ? "Your normal " : "Pre-flight baseline "}</span>
             <span className="font-semibold tabular">
               {ind.format(ind.baseline)} {ind.unit}
             </span>
           </span>
           {baselineDelta(id, r) && <span className="text-white/80">{baselineDelta(id, r)}</span>}
-          <span className="basis-full text-xs text-white/50">From your NASA pre-flight medical exam</span>
+          <span className="basis-full text-xs text-white/50">
+            {id === "heart_rate" && restingRef
+              ? `Median of ${restingRef.n_used} resting readings, mission days ${restingRef.window_days[0]}-${restingRef.window_days[1]}`
+              : "From your NASA pre-flight medical exam"}
+          </span>
+          {id === "heart_rate" && r && !fresh.unknown && (
+            <span className="basis-full pt-1 text-sm text-white/85">{assessRestingValue(r.value, r.at)?.reason}</span>
+          )}
+          {id === "heart_rate" && (
+            <span className="basis-full text-xs text-white/50">
+              Exercise zone {thresholds.exercise_hr_zone.zone_bpm[0]}-{thresholds.exercise_hr_zone.zone_bpm[1]} bpm ({thresholds.exercise_hr_zone.zone_percent_of_max[0]}-{thresholds.exercise_hr_zone.zone_percent_of_max[1]}% of max, NASA ISS guidance)
+            </span>
+          )}
         </div>
       )}
       {id === "heart_rate" && r && !fresh.unknown && <HeartStrip bpm={r.value} />}
@@ -227,6 +240,11 @@ export const latestValue = (r: Reading | undefined, id: IndicatorId) => (r ? ind
 export function baselineDelta(id: IndicatorId, r: Reading | undefined) {
   if (!r || id === "radiation") return null;
   const ind = indicators[id];
+  // Heart rate uses the team's rule: percent change from your normal.
+  if (id === "heart_rate") {
+    const pct = Math.round(((r.value - ind.baseline.value) / ind.baseline.value) * 100);
+    return pct === 0 ? "At your normal" : `${pct > 0 ? "+" : ""}${pct}% vs your normal`;
+  }
   const d = r.value - ind.baseline.value;
   if (Math.abs(d) < (ind.chart[1] - ind.chart[0]) * 0.015) return "At your baseline";
   const step = id === "temperature" || id === "sleep" ? d.toFixed(1) : String(Math.round(d));
