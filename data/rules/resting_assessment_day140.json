@@ -1,0 +1,23 @@
+{
+  "indicator": "heart_rate",
+  "context": "resting",
+  "rule_version": "0.1-demo",
+  "reference": {
+    "window_days": [
+      1,
+      14
+    ],
+    "method": "median",
+    "n_used": 13,
+    "value": 62.0,
+    "unit": "bpm"
+  },
+  "today": {
+    "value": 74,
+    "measured_at": "2027-07-18T07:07:00Z",
+    "record_id": "REST-140"
+  },
+  "change_percent": 19.4,
+  "status": "flagged",
+  "reason": "Resting HR 74 bpm is 19% above your normal of 62 bpm (days 1-14)."
+}
