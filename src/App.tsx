@@ -8,7 +8,10 @@ import { symptomGroups, commonSymptoms } from './symptoms'
 import { lazy, Suspense } from 'react'
 import MeasurementExplorer, { metricStates } from './MeasurementExplorer'
 import Today from './Today'
-import CrewBreak from './CrewBreak'
+import CrewBreak from './CrewWellbeing'
+import DailyCheckIn from './DailyCheckIn'
+import WellbeingHistory from './WellbeingHistory'
+import { moodRatings, type DailyCheckIn as DailyEntry, type AttentionSession } from './wellbeing'
 import { visibleMoods, type Mood } from './breakRound'
 import DemoSetup from './DemoSetup'
 import { defaultDemoSettings, type DemoSettings } from './demoSettings'
@@ -54,6 +57,8 @@ export default function App() {
   const [severity, setSeverity] = useState<'mild' | 'moderate' | 'severe' | 'unsure'>('unsure')
   const [onset, setOnset] = useState('uncertain')
   const [note, setNote] = useState('')
+  const [notesOpen, setNotesOpen] = useState(false)
+  const [dailyContext, setDailyContext] = useState('')
   const [reporter, setReporter] = useState('CM-2')
   const [actor, setActor] = useState('CM-1')
   const [handoffNote, setHandoffNote] = useState('')
@@ -84,7 +89,7 @@ export default function App() {
   }
   useEffect(() => { void initialise() }, [])
   useEffect(() => {
-    setSelectedSymptoms([]); setSeverity('unsure'); setOnset('uncertain'); setNote(''); setReporter('CM-2')
+    setSelectedSymptoms([]); setSeverity('unsure'); setOnset('uncertain'); setNote(''); setReporter('CM-2'); setNotesOpen(false); setDailyContext('')
     setActor('CM-1'); setMeasurement(''); setContext('unspecified'); setReplaySeconds(null)
     setReset(false); setHandoffNote(''); setMeasurementKind('heart_rate'); setDiastolic(''); setMeasurementOpen(false)
   }, [run?.id])
@@ -133,6 +138,21 @@ export default function App() {
       id: crypto.randomUUID(), at: run.now, mood,
     }] }, true)
   }
+  async function saveDaily(entry: DailyEntry) {
+    if (!run) return false
+    return commit({ ...run, dailyCheckIns: [...(run.dailyCheckIns ?? []), entry] }, true)
+  }
+  async function saveAttention(entry: AttentionSession) {
+    if (!run) return false
+    if (run.attentionSessions?.some(item => item.id === entry.id)) return true
+    return commit({ ...run, attentionSessions: [...(run.attentionSessions ?? []), entry] }, true)
+  }
+  function followDaily(entry: DailyEntry) {
+    const summary = 'Daily self-check: mood ' + entry.moodRating + '/5 (' + moodRatings[entry.moodRating - 1] +
+      '); ' + (entry.discomfort ? 'discomfort reported.' : 'no uncomfortable feelings reported.')
+    setDailyContext(summary + ' Select any symptoms or Another concern to explain how you feel. Your daily answers are not copied into the ground report.')
+    setView('Self-check')
+  }
   async function submitSymptom(e: FormEvent) {
     e.preventDefault()
     if (!run) return
@@ -148,7 +168,7 @@ export default function App() {
       description: note.trim() || symptom + ' reported',
     }))
     if (await commit({ ...run, now, events: [...run.events, ...reports] })) {
-      setView('Handoff'); setNote(''); setSelectedSymptoms([]); setSeverity('unsure'); setOnset('uncertain')
+      setView('Handoff'); setNote(''); setSelectedSymptoms([]); setSeverity('unsure'); setOnset('uncertain'); setDailyContext(''); setNotesOpen(false)
     }
   }
   async function recordMeasurement(e: FormEvent) {
@@ -220,7 +240,7 @@ export default function App() {
         view === 'Measurements' ? 'Available readings, their times and what needs review.' :
         view === 'Self-check' ? 'Your report stays visible alongside device measurements.' :
         view === 'Handoff' ? 'Pass this tablet to an onboard teammate.' : view === 'Crew break' ? 'Take a short break or record how you feel. Both are optional.' : 'Measurements, crew reports and recorded actions.'}</p></div>
-        <div className="clock"><strong>{time(run.now)} <small>UTC</small></strong><span>Simulated mission clock</span></div>
+        <div className="clock"><strong>{time(run.now)} <small>UTC</small></strong><span>Simulated mission clock</span><span>{new Date(run.now).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}</span></div>
       </div>
       {error && <div role="alert" className="error"><p>{error}</p>{pending.current &&
         <button disabled={busy} onClick={() => void commit(pending.current!, false, pendingSettings.current)}>Retry last action</button>}</div>}
@@ -231,9 +251,11 @@ export default function App() {
         onStart={preferences => { void commit(createRun(preferences.startupScenario), false, preferences) }} />}
 
       {view === 'Today' && <Today run={run} onReport={() => setView('Self-check')}
+        dailyCheckIn={<DailyCheckIn key={run.id} run={run} busy={busy} onSave={saveDaily} onFollowUp={followDaily}/>}
         onHandoff={() => setView('Handoff')} onBreak={() => setView('Crew break')}
         onMeasurements={indicator => { setInitialMetric(indicator ?? 'heart_rate'); setView('Measurements') }} />}
-      {view === 'Crew break' && <CrewBreak key={run.id} run={run} busy={busy} saveMood={saveMood} goBack={() => setView('Today')} />}
+      {view === 'Crew break' && <CrewBreak key={run.id} run={run} busy={busy} saveMood={saveMood} saveAttention={saveAttention}
+        goBack={() => setView('Today')} onSelfCheck={() => setView('Self-check')} />}
       {view === 'Measurements' && <MeasurementExplorer run={run} initialMetric={initialMetric} onRecord={indicator => {
         setMeasurementKind(indicator.endsWith('_bp') ? 'blood_pressure' : indicator)
         setMeasurement(''); setDiastolic(''); setMeasurementOpen(true); setView('Self-check')
@@ -241,6 +263,7 @@ export default function App() {
 
       {view === 'Self-check' && <div className="workspace">
         <section className="panel"><h2>Your report</h2><form onSubmit={submitSymptom}>
+          {dailyContext && <p role="status" className="daily-context">{dailyContext}</p>}
           <fieldset><legend>What are you experiencing?</legend><p className="help">Select all that apply. You can request assistance at any time.</p>
             <div className="common-symptoms">{commonSymptoms.map(symptom => <label className="symptom-choice" key={symptom}>
               <input type="checkbox" checked={selectedSymptoms.includes(symptom)} onChange={e =>
@@ -258,7 +281,7 @@ export default function App() {
           <label>How much is this affecting you?<select value={severity} onChange={e => setSeverity(e.target.value as typeof severity)}>
             <option value="unsure">Not sure</option><option value="mild">Mild</option><option value="moderate">Moderate</option><option value="severe">Severe</option>
           </select></label>
-          <details className="optional-details"><summary>Timing and notes <span className="optional">Optional</span></summary>
+          <details className="optional-details" open={notesOpen} onToggle={e => setNotesOpen(e.currentTarget.open)}><summary>Timing and notes <span className="optional">Optional</span></summary>
           <label>Who is reporting?<select value={reporter} onChange={e => setReporter(e.target.value)}><option value="CM-2">CM-2 · Reporting for myself</option><option value="CM-1">CM-1 · Reporting for CM-2</option></select></label>
           <fieldset><legend>When did it begin?</legend><div className="choices">{[
             ['now', 'Around now'], ['earlier', 'About 10 minutes ago'], ['uncertain', 'Not sure'],
@@ -326,6 +349,7 @@ export default function App() {
       </div>}
 
       {view === 'History' && <>
+        <WellbeingHistory run={run}/>
         {visibleMoods(run).length > 0 && <details className="panel mood-history"><summary>Mood check-ins · This tablet only ({visibleMoods(run).length})</summary>
           <p className="help">CM-2’s own words for this replay. Excluded from ground reports.</p>
           <ul>{visibleMoods(run).map(entry => <li key={entry.id}><time dateTime={entry.at}>{time(entry.at)} UTC</time> · {entry.mood}</li>)}</ul>
@@ -379,7 +403,7 @@ export default function App() {
           <label>Load a separate scenario<select disabled={busy} value={run.scenario} onChange={e => {
             void commit(createRun(e.target.value as Scenario)).then(ok => { if (ok) { setView('Today'); setNote(''); setMeasurement('') } })
           }}>{Object.entries(scenarioNames).map(([id, name]) => <option key={id} value={id}>{id} · {name}</option>)}</select></label>
-          <label>Replay time · {time(run.now)} UTC<input aria-label="Replay time" type="range" min="0" max="2700" step="5" disabled={busy}
+          <label>Replay time · {time(run.now)} UTC<input aria-label="Replay time" type="range" min="0" max={Math.max(2700, (Date.parse(run.now) - Date.parse('2027-07-18T13:30:00Z')) / 1000)} step="5" disabled={busy}
             value={replaySeconds ?? (Date.parse(run.now) - Date.parse('2027-07-18T13:30:00Z')) / 1000}
             onChange={e => setReplaySeconds(Number(e.target.value))}
             onPointerUp={e => { void commit({ ...run, now: new Date(Date.parse('2027-07-18T13:30:00Z') + Number(e.currentTarget.value) * 1000).toISOString() }).then(() => setReplaySeconds(null)) }}
@@ -392,6 +416,7 @@ export default function App() {
           <div className="button-row"><button disabled={busy} onClick={() => void append({ type: result.sensor === 'disconnected' ? 'sensor_connected' : 'sensor_disconnected' })}>
             {result.sensor === 'disconnected' ? 'Reconnect sensor' : 'Disconnect sensor'}</button>
             <button disabled={busy} onClick={() => void commit({ ...run, now: advance(run.now, 60) })}>Advance 1 minute</button>
+            <button disabled={busy} onClick={() => void commit({ ...run, now: advance(run.now, 20 * 3600) })}>Advance 20 hours · Daily reminder</button>
             <button onClick={() => setReset(true)}>Start a fresh replay</button>
             <button disabled={busy} onClick={() => {
               const now = advance(run.now)

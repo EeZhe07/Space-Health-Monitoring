@@ -60,7 +60,13 @@ Demo controls load scenarios A-F, move the simulated clock, disconnect or reconn
 
 The two-minute heart-rate validity window and other indicator freshness windows are illustrative settings. The prototype supports measurement review and onboard coordination. Clinical diagnosis, treatment protocols, real device adapters, mission connectivity and distinct-user ground-team permissions need separate work. Only fictional records should be entered in the public demo.
 
-**Crew break:** Pick two tiles at a time to find three pairs, or use the mood check-in directly. Starting, ending and completing rounds do not write health data. An explicitly saved mood stays in the replay on this shared tablet and appears in History as of the replay clock. Ground exports and Supabase packets exclude these entries. No database migration or network connection is needed after the app is cached.
+**Daily self-check:** Today asks CM-2 for a mood rating (1–5) and whether there are uncomfortable feelings. Nothing is preselected. Mood 1–2 or discomfort opens Self-check after saving; the private daily answer is shown separately from the exported symptom note. Existing concerns stay open until explicitly resolved. The reminder becomes due initially and after 20 hours on either the real elapsed clock or simulated mission clock. It refreshes each minute while open and on offline reload; it does not send OS notifications. Demo controls include **Advance 20 hours · Daily reminder**.
+
+**Crew break:** Signal Watch replaces the matching game. Practice three signals, then optionally start a 12-signal recorded round. Use one selected mouse/touch/keyboard control, responding only to SIGNAL. Completed rounds automatically save reaction times, missed signals, early inputs and protocol/input metadata to the run. Leaving the response area, hiding the page, ending a round or changing the mission clock cancels an incomplete round. The separate mood question remains available without playing.
+
+The task compares a round only after three earlier usable rounds with matching input/protocol in this browser. At least eight of twelve responses are needed. A median slowdown exceeding both 25% and 75 ms, two extra misses, or three extra early inputs are illustrative product flags, not NASA clinical thresholds. No psychological label or fitness judgment is inferred. Device timing, fatigue, practice and distraction can affect results. The short task has not inherited the validation of NASA's three-minute PVT-B. See [NASA project](https://techport.nasa.gov/projects/23201) and [primary ISS study](https://pmc.ncbi.nlm.nih.gov/articles/PMC8919197/).
+
+Daily entries, completed task records and legacy mood entries appear in local History as of the replay clock. Ground exports and Supabase packets exclude them. No database migration or network connection is needed after the app is cached. These remain synthetic demo records for CM-2.
 
 Records are scoped to this browser and website origin. Clearing site data removes them; export JSON to keep a copy. Browser storage is not an access-control system. Crew IDs in the interface identify simulated participants without authenticating them.
 
@@ -78,6 +84,7 @@ npm run test:browser
 npm run test:cloud-browser
 npm run test:chart-browser
 npm run test:break-browser
+npm run test:daily-browser
 npm run test:demo-browser
 ```
 

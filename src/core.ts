@@ -30,6 +30,8 @@ export interface CrewEvent {
   severity?: 'mild' | 'moderate' | 'severe' | 'unsure'
 }
 export interface Run {
+  dailyCheckIns?: import('./wellbeing').DailyCheckIn[]
+  attentionSessions?: import('./wellbeing').AttentionSession[]
   moodCheckIns?: import('./breakRound').MoodCheckIn[]
   id: string
   scenario: Scenario

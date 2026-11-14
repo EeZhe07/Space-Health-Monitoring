@@ -2,9 +2,11 @@ import { assess, time, type Run } from './core'
 import { metricStates } from './MeasurementExplorer'
 import TrendChart from './TrendChart'
 import type { Indicator } from './indicators'
+import type { ReactNode } from 'react'
 
-export default function Today({ run, onReport, onHandoff, onMeasurements, onBreak }: {
+export default function Today({ run, onReport, onHandoff, onMeasurements, onBreak, dailyCheckIn }: {
   run: Run; onReport: () => void; onHandoff: () => void; onMeasurements: (indicator?: Indicator) => void; onBreak: () => void
+  dailyCheckIn?: ReactNode
 }) {
   const result = assess(run)
   const concern = result.symptoms.length > 0 || result.assistanceRequested
@@ -26,6 +28,7 @@ export default function Today({ run, onReport, onHandoff, onMeasurements, onBrea
         <small>{acknowledged ? result.acknowledgement!.actor + ' · ' + time(result.acknowledgement!.at) + ' UTC' : 'CM-2 · Shared tablet'}</small>
       </div>
     </section>
+    {dailyCheckIn}
     <section className="panel overview-panel">
       <div className="panel-heading"><h2>Latest measurements</h2><button onClick={() => onMeasurements(result.metrics.find(m => m.state === 'review')?.indicator)}>
         {reviewCount ? reviewCount + ' readings to review' : 'View measurements'}</button></div>
@@ -54,8 +57,8 @@ export default function Today({ run, onReport, onHandoff, onMeasurements, onBrea
         <div className="chart-note">{result.last ? 'Last reliable reading: ' + result.last.value + ' bpm at ' +
           time(result.last.measuredAt) + ' UTC · ' + result.last.context.replaceAll('_', ' ') : 'No measurement has been received in this scenario.'}</div>
       </section>
-      <section className="panel next-actions"><h2>Optional crew break</h2>
-        <p>Play a short matching game or log your mood on this tablet.</p>
+      <section className="panel next-actions"><h2>Optional attention check</h2>
+        <p>Try Signal Watch to record reaction performance, or log your mood directly.</p>
         <button onClick={onBreak}>Open crew break</button>
       </section>
     </div>
