@@ -1,0 +1,20 @@
+[
+  {
+    "event_id": "EV-140-001",
+    "crew_id": "CM-2",
+    "type": "assistance_requested",
+    "by": "CM-2",
+    "time": "2027-07-18T14:09:00Z",
+    "source": "crew_input",
+    "synthetic": true
+  },
+  {
+    "event_id": "EV-140-002",
+    "crew_id": "CM-3",
+    "type": "handoff_acknowledged",
+    "by": "CM-3",
+    "time": "2027-07-18T14:10:00Z",
+    "source": "crew_input",
+    "synthetic": true
+  }
+]

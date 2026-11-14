@@ -1,0 +1,58 @@
+{
+  "crew_id": "CM-2",
+  "mission_day": 140,
+  "evaluated_at": "2027-07-18T14:11:00Z",
+  "rule_version": "0.1-demo",
+  "symptom_status": "open",
+  "open_symptoms": [
+    {
+      "symptom": "dizziness",
+      "reported_at": "2027-07-18T14:08:00Z",
+      "onset_at": "2027-07-18T14:07:00Z",
+      "onset_certainty": "approximate",
+      "reporter": "self"
+    }
+  ],
+  "current_hr": {
+    "status": "unknown",
+    "last_reliable": {
+      "value": 142,
+      "unit": "bpm",
+      "measured_at": "2027-07-18T14:06:00Z",
+      "context": "exercise"
+    }
+  },
+  "sensor": "disconnected",
+  "unknowns": [
+    "current heart rate",
+    "post-exercise blood pressure"
+  ],
+  "actions_taken": [
+    "symptom report at 14:08",
+    "handoff acknowledged at 14:10"
+  ],
+  "assistance": "available",
+  "handoff": {
+    "status": "acknowledged",
+    "by": "CM-3",
+    "at": "2027-07-18T14:10:00Z"
+  },
+  "reasons": [
+    "Last reliable heart rate was 5 min ago (demo validity window: 2 min).",
+    "Last reading was taken during exercise; it is not compared with resting values.",
+    "Open symptom: dizziness reported 14:08, onset ~14:07 (approximate).",
+    "No blood pressure has been recorded since exercise ended.",
+    "Wrist sensor disconnected; no readings since then.",
+    "Handoff acknowledged by CM-3 at 14:10."
+  ],
+  "contributing_ids": [
+    "HR-140-036",
+    "EV-140-001",
+    "SYM-140-001",
+    "EV-140-002"
+  ],
+  "labels": [
+    "synthetic data",
+    "illustrative demo rules"
+  ]
+}
