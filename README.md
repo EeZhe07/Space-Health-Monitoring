@@ -1,14 +1,63 @@
 # Crew Health
 
-A crew-tablet and ground-review prototype for NASA Space Apps 2026. English interface built with React, TypeScript and Vite. All bundled crew data is synthetic.
+An interactive astronaut health-monitoring prototype for NASA Space Apps 2026. Crew Health brings health trends, missing-data explanations and crew handoffs into one experience for missions with delayed communication.
 
-## Merged teammate UI
+All bundled crew data is synthetic. Sensor connections, emergency alerts and flight-surgeon messages in the public demo are simulated. Assessment rules and guidance are illustrative.
 
-The latest `ui/status-dashboard` branch (through `3261052`) is merged into this branch. It adds the separate visual demo under `ui/` plus shared resting-heart-rate history and rule files under `data/`. The root app retains crew profiles, daily checks, Signal Watch, IndexedDB/Supabase packets and Ground Review. The visual demo currently has its own localStorage state; merging the source does not connect those two state models.
+## Explore the project
 
-Run the visual demo independently with `npm ci --prefix ui`, `npm run build --prefix ui`, then `npm run preview --prefix ui -- --host 127.0.0.1 --port 4174 --strictPort`. Use port 4173 for the root app as described below. Validate the incoming demo using `npm run check --prefix ui`. With both previews running, `node scripts/check-ui-merge.cjs` checks the visual routes, narrow layout and offline reload.
+| Resource | What to expect |
+| --- | --- |
+| [Launch the live prototype](https://eezhe07.github.io/Space-Health-Monitoring/#/) | Open the deployed Crew Health dashboard in your browser. |
+| [Watch the 30-second pitch](https://drive.google.com/file/d/1Ri98hiIegMYQvacfjTWA8QEsnl44K9Et/view?usp=sharing) | A short introduction to the problem and our solution. |
+| [Watch the 3-minute walkthrough](https://drive.google.com/file/d/1dEonVHMvDkNAkLTZzbC8r4FKh9qJsiiF/view?usp=sharing) | An extended project demonstration for local judges. |
+| [View the presentation slides (PDF)](https://drive.google.com/file/d/1bzKqt-zyvoXbTRcAVelcWcaCzk1vmmOs/view?usp=sharing) | The Crew Health overview prepared for judges. |
+| [Browse the GitHub repository](https://github.com/EeZhe07/Space-Health-Monitoring) | Source code, synthetic scenarios and technical documentation. |
 
-## Run locally
+## What the public demo shows
+
+- **Health at a glance.** Nine simulated indicators cover heart rate, blood oxygen, breathing rate, blood pressure, blood sugar, temperature, sleep, estimated mood and radiation exposure.
+- **Changes over time.** Personal-baseline comparisons, pattern alerts, a body map and 30-day trend charts help explain the readings.
+- **Visible uncertainty and crew support.** Six replayable heart-rate scenarios demonstrate sensor interruptions, symptoms, requests for help and crew acknowledgement.
+- **Daily routines and mission context.** Prevention plans, sensor-health displays and environment settings explore everyday monitoring and communication delays.
+- **Offline access.** The production app can reopen offline after its assets have been cached on the first online visit.
+
+To explore a crew concern, open **Live check**, choose **C — Dizzy, no sensor**, and inspect the assessment reasons and timeline. Use **Respond as CM-3** to demonstrate acknowledgement of the crew handoff.
+
+## Research and data
+
+NASA exercise publications informed the synthetic heart-rate scenarios, and Human Research Program resources informed the educational content. The repository records source material and distinguishes it from illustrative settings.
+
+- [References and AI disclosure](REFERENCES.md)
+- [Synthetic data methodology](data/README.md)
+- [Assessment rule definitions](data/rules/thresholds.json)
+- [Public UI features](ui/FEATURES.md)
+
+## Applications in this repository
+
+| Application | Location | Features |
+| --- | --- | --- |
+| Published visual demo | `ui/` | Dashboard, body map, trends, Live check, prevention plan, sensor simulation and Guide. |
+| Crew-and-ground prototype | Repository root | Crew profiles, daily self-checks, Signal Watch, report snapshots and Ground Review. |
+
+The two applications share scenario and heart-rate data under `data/` and currently maintain independent browser state. Connecting their state is future integration work.
+
+## Run the published demo locally
+
+Use Node.js 24, matching the GitHub Pages build.
+
+```sh
+npm ci --prefix ui
+npm run check --prefix ui
+npm run build --prefix ui
+npm run preview --prefix ui -- --host 127.0.0.1 --port 4174 --strictPort
+```
+
+Open http://127.0.0.1:4174. For offline use, visit online once and allow caching to finish before reopening offline.
+
+With the public demo preview on port 4174 and the root app preview on port 4173, `node scripts/check-ui-merge.cjs` checks the visual routes, narrow layout and offline reload.
+
+## Run the crew-and-ground prototype locally
 
 Requires Node.js 22.12+.
 
