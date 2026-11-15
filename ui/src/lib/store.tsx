@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { indicators, indicatorList, type IndicatorId, type Level, type Reading } from "./indicators";
+import { indicators, indicatorList, sensorOf, type IndicatorId, type Level, type Reading } from "./indicators";
 import { environments, type Environment, type EnvironmentId } from "./environments";
 import { syntheticHistory, TODAY, dayToIso, NOW_ISO } from "./history";
 import { computeAlerts, type TrendAlert } from "./trends";
@@ -101,7 +101,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const freshness = (id: IndicatorId) => {
     const ind = indicators[id];
     const r = latest(id);
-    const since = offline[id];
+    const since = offline[sensorOf(id)];
     if (ind.auto && since && !(r && r.source === "crew_input" && r.at > since)) {
       return { unknown: true, reason: `${ind.source} disconnected at ${since.slice(11, 16)}` };
     }

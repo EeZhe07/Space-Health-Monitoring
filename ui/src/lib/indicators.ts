@@ -9,7 +9,7 @@ const HR_REF = restingRef?.value ?? 62;
 const HR_FLAG = 1 + thresholds.resting_hr_change_flag.flag_if_above_percent / 100;
 
 export type Level = "steady" | "watch" | "act";
-export type IndicatorId = "heart_rate" | "blood_pressure" | "blood_sugar" | "temperature" | "sleep" | "mood" | "radiation";
+export type IndicatorId = "heart_rate" | "spo2" | "respiratory_rate" | "blood_pressure" | "blood_sugar" | "temperature" | "sleep" | "mood" | "radiation";
 
 export interface Reading {
   id: string;
@@ -75,6 +75,58 @@ export const indicators: Record<IndicatorId, Indicator> = {
     source: "Wrist sensor",
     auto: true,
     baseline: { value: HR_REF },
+  },
+  spo2: {
+    id: "spo2",
+    name: "Blood oxygen (SpO2)",
+    unit: "%",
+    band: [95, 100],
+    chart: [85, 100],
+    level: ({ value: v }) => (v >= 95 ? "steady" : v >= 92 ? "watch" : "act"),
+    format: ({ value }) => `${Math.round(value)}`,
+    howTo: [
+      "Nothing to enter: the wrist sensor's pulse oximeter reads it every few minutes.",
+      "Keep the sensor snug and still; cold hands or movement can give a low reading.",
+    ],
+    why: "Shows how much oxygen your blood is carrying. A drop can mean a cabin air problem, a chest infection or a heart or lung issue.",
+    inSpace: "Life support makes and cleans the cabin air, and CO2 builds up faster in a closed space. If the whole crew's readings fall, suspect the air, not the person.",
+    todo: {
+      steady: "Nothing to do.",
+      watch: "Sit still for a minute, warm your hands and check the sensor fit. If it stays below 95%, tell a crewmate and check the cabin air readings.",
+      act: "Stop activity and tell a crewmate now. Check the cabin oxygen and CO2 readings and use an oxygen mask if one is available. Contact the flight surgeon.",
+    },
+    escalate: { act: "flight_surgeon", watch: "crewmate" },
+    input: [{ label: "Blood oxygen", min: 70, max: 100, step: 1, placeholder: "e.g. 97" }],
+    scheduleHint: "Continuous",
+    source: "Wrist sensor (pulse oximeter)",
+    auto: true,
+    baseline: { value: 98 },
+  },
+  respiratory_rate: {
+    id: "respiratory_rate",
+    name: "Breathing rate",
+    unit: "breaths/min",
+    band: [12, 20],
+    chart: [6, 32],
+    level: ({ value: v }) => (v >= 12 && v <= 20 ? "steady" : v >= 10 && v <= 24 ? "watch" : "act"),
+    format: ({ value }) => `${Math.round(value)}`,
+    howTo: [
+      "Nothing to enter: the chest strap counts breaths while you rest.",
+      "Readings taken during exercise are left out; the resting value is shown.",
+    ],
+    why: "Faster breathing at rest is an early sign of fever, infection, pain, anxiety or too much CO2 in the cabin.",
+    inSpace: "High CO2 in a closed cabin makes you breathe faster and can cause headaches. Fluid shifting toward the chest can also change breathing.",
+    todo: {
+      steady: "Nothing to do.",
+      watch: "Rest for 10 minutes and let it re-measure. Check the cabin CO2 reading and note any headache or chest symptoms.",
+      act: "Stop activity, sit or anchor yourself and tell a crewmate now. Check the cabin air and contact the flight surgeon.",
+    },
+    escalate: { act: "flight_surgeon", watch: "crewmate" },
+    input: [{ label: "Breaths per minute", min: 4, max: 60, step: 1, placeholder: "e.g. 14" }],
+    scheduleHint: "At rest",
+    source: "Chest strap",
+    auto: true,
+    baseline: { value: 14 },
   },
   blood_pressure: {
     id: "blood_pressure",
@@ -238,6 +290,9 @@ export const indicators: Record<IndicatorId, Indicator> = {
 };
 
 export const indicatorList = Object.values(indicators);
+
+/** The sensor (keyed by its main indicator) each reading depends on: the wrist sensor also gives blood oxygen and the mood estimate. */
+export const sensorOf = (id: IndicatorId): IndicatorId => (id === "spo2" || id === "mood" ? "heart_rate" : id);
 
 export const levelMeta: Record<Level, { label: string; text: string; bg: string; dot: string }> = {
   steady: { label: "Steady", text: "text-steady", bg: "bg-steady/15", dot: "bg-steady" },

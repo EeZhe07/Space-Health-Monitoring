@@ -68,7 +68,7 @@ const situations: Record<Kind, { label: string; icon: typeof Siren; steps: strin
   },
 };
 
-const VITALS: IndicatorId[] = ["heart_rate", "blood_pressure", "temperature", "radiation"];
+const VITALS: IndicatorId[] = ["heart_rate", "spo2", "respiratory_rate", "blood_pressure", "temperature", "radiation"];
 
 export function EmergencyScreen() {
   const { emergency, endEmergency, latest, freshness, sendMessage, env } = useStore();

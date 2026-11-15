@@ -30,6 +30,9 @@ export function syntheticHistory(): Reading[] {
   for (let d = FIRST_DAY; d <= TODAY; d++) {
     const late = Math.max(0, d - 133); // last week
     push("sleep", d, 6, Math.max(4.5, n(7.4 - late * 0.27, 0.35)));
+    // Wrist pulse oximeter and chest strap: steady, a touch lower and faster after short nights.
+    push("spo2", d, 7.1, Math.round(Math.min(100, n(97.6 - late * 0.12, 0.8))));
+    push("respiratory_rate", d, 7.15, Math.round(n(14 + late * 0.25, 1.2)));
     push("blood_pressure", d, 7.2, n(116 + (d - FIRST_DAY) * 0.35, 4), n(75 + (d - FIRST_DAY) * 0.2, 3));
     push("blood_sugar", d, 7.4, n(88, 7));
     push("temperature", d, 7.5, d === 124 ? 37.6 : n(36.7, 0.25));

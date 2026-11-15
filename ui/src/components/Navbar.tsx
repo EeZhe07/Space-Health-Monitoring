@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Infinity, Menu, Settings2, Siren, X } from "lucide-react";
+import { Check, CloudOff, Infinity, Menu, Settings2, Siren, WifiOff, X } from "lucide-react";
+import { useOfflineStatus, useOnline, type OfflineStatus } from "@/lib/offline";
 import { go, type Route } from "@/lib/router";
 import { useStore } from "@/lib/store";
 import { environments, formatDelay } from "@/lib/environments";
@@ -41,6 +42,7 @@ export function Navbar({ route }: { route: Route }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useDismiss(settingsOpen, () => setSettingsOpen(false));
   const { levelOf, startEmergency } = useStore();
+  const online = useOnline();
   const badges: Partial<Record<Route, number>> = {
     home: indicatorList.filter((i) => levelOf(i.id) === "act").length,
   };
@@ -75,6 +77,13 @@ export function Navbar({ route }: { route: Route }) {
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
+          {!online && (
+            <span role="status" className="liquid-glass flex h-10 items-center gap-2 rounded-full px-3.5 text-xs font-semibold text-watch" title="No link to Earth. Readings and the app keep working on this tablet.">
+              <WifiOff size={15} aria-hidden />
+              <span className="hidden sm:inline">Offline: working on this tablet</span>
+              <span className="sr-only sm:hidden">Offline</span>
+            </span>
+          )}
           <button
             type="button"
             onClick={startEmergency}
@@ -136,6 +145,8 @@ export function Navbar({ route }: { route: Route }) {
 function SettingsPanel({ className, inline = false }: { className?: string; inline?: boolean }) {
   const { env, setEnv, motionPref, setMotionPref } = useStore();
   const motionOn = motionPref === "full";
+  const offline = useOfflineStatus();
+  const online = useOnline();
   return (
     <div role="group" aria-label="Settings" className={cn(!inline && "z-30 rounded-2xl bg-[#0c111c]/95 p-2 ring-1 ring-white/10", className)}>
       <p className="px-3 pb-1 pt-2 text-xs font-semibold text-white/55">Mission environment</p>
@@ -167,6 +178,26 @@ function SettingsPanel({ className, inline = false }: { className?: string; inli
           <span className={cn("absolute top-1 size-4 rounded-full bg-white transition-[left]", motionOn ? "left-6" : "left-1")} />
         </span>
       </button>
+      <div className="flex items-start justify-between gap-3 border-t border-white/10 px-3 py-3 text-sm text-white" role="status">
+        <span className="flex items-start gap-2">
+          <CloudOff size={16} className="mt-0.5 shrink-0 text-white/70" aria-hidden />
+          <span>
+            <span className="block">Offline mode</span>
+            <span className="block text-xs text-white/55">{offlineText[offline]}{offline === "ready" && !online ? " You're offline now." : ""}</span>
+          </span>
+        </span>
+        <span className={cn("mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold", offline === "ready" ? "bg-steady/15 text-steady" : offline === "preparing" ? "bg-watch/15 text-watch" : "bg-white/10 text-white/60")}>
+          {offlineLabel[offline]}
+        </span>
+      </div>
     </div>
   );
 }
+
+const offlineLabel: Record<OfflineStatus, string> = { ready: "Ready", preparing: "Saving…", dev: "Off", unsupported: "Off" };
+const offlineText: Record<OfflineStatus, string> = {
+  ready: "Saved on this tablet: the app opens and works with no link to Earth.",
+  preparing: "Saving the app on this tablet for use with no connection.",
+  dev: "Not available on the dev server. Use the production build (npm run build, then npm run preview).",
+  unsupported: "This browser can't save the app for offline use.",
+};

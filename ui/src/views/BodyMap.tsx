@@ -36,10 +36,10 @@ const regions: Region[] = [
   },
   {
     id: "heart",
-    name: "Heart and blood vessels",
-    does: "Pump blood and oxygen to every part of the body.",
-    inSpace: "With no gravity to pump against, the heart can shrink slightly and blood pressure control weakens.",
-    indicators: ["heart_rate", "blood_pressure"],
+    name: "Heart and lungs",
+    does: "The lungs take in oxygen and the heart pumps it in the blood to every part of the body.",
+    inSpace: "With no gravity to pump against, the heart can shrink slightly and blood pressure control weakens. CO2 builds up faster in a closed cabin and changes how you breathe.",
+    indicators: ["heart_rate", "spo2", "respiratory_rate", "blood_pressure"],
   },
   {
     id: "metabolism",
