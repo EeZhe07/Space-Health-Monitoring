@@ -12,14 +12,13 @@ function radiationText(f: number) {
 /** Says what changed when the crew picks a different mission environment. */
 export function EnvToast() {
   const { env } = useStore();
-  const first = useRef(true);
+  const prev = useRef(env.id);
   const [shown, setShown] = useState<Environment | null>(null);
 
   useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
-    }
+    // Compare with the last environment (not a "first run" flag, which StrictMode's double effect would use up).
+    if (prev.current === env.id) return;
+    prev.current = env.id;
     setShown(env);
     const t = setTimeout(() => setShown(null), 3000);
     return () => clearTimeout(t);
