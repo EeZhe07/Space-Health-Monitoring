@@ -20,7 +20,7 @@ threshold is an illustrative demo rule, not medical guidance.
 | Actions that prevent a critical condition | **Daily check-in → Prevention plan**: exercise, sleep window, water, plus extra countermeasures added automatically from your patterns and environment |
 | Prompt measurements as part of the mission routine | Sensors measure on their own; **Plan → Sensor health** flags low batteries and dropped sensors before data goes missing |
 | Gamification | **Plan**: XP and level, and a streak for days the prevention plan is finished |
-| Works far from Earth | **Offline mode**: the app caches itself and keeps working with no connection; a navbar badge shows when the link is down |
+| Works far from Earth | **Offline mode**: the build saves every file on the first visit, so the app keeps working with no connection; Settings shows whether it's ready and a navbar badge shows when the link is down |
 | Different environments (spacecraft, station, rover, Moon/Mars base) | Environment switcher in the navbar; changes comms delay, gravity and radiation dose rate |
 | Don't assume astronauts know how to assess themselves | Every indicator has short instructions and a "why" in place, not hidden in a manual |
 
@@ -38,8 +38,8 @@ the app: when a sensor drops out, its Status card shows **Unknown** with the
 last trusted value and the reason, instead of an old number.
 
 
-**Vitals → Live check** replays the team's scenarios in `data/scenarios`
-(A–D on main, E–F once PR #3 is merged): heart rate validity window, sensor
+**Vitals → Live check** replays the team's scenarios A–F in `data/scenarios`:
+heart rate validity window, sensor
 disconnects, symptom reports, assistance requests and crew handoff. The demo
 engine in `src/lib/engine.ts` reproduces every `*_expected.json` exactly
 (`npm run check`).

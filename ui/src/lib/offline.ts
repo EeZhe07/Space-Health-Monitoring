@@ -3,17 +3,15 @@ import { useEffect, useState } from "react";
 /** Registers the offline cache (production builds only; the dev server reloads too often). */
 export function registerOffline() {
   if (!import.meta.env.PROD || !("serviceWorker" in navigator)) return;
-  addEventListener("load", async () => {
+  const register = async () => {
     try {
-      await navigator.serviceWorker.register("./sw.js");
-      const reg = await navigator.serviceWorker.ready;
-      // Cache everything this first visit already downloaded (scripts, styles, fonts).
-      const urls = performance.getEntriesByType("resource").map((r) => r.name).filter((u) => u.startsWith("http"));
-      reg.active?.postMessage({ type: "cache", urls: [location.href.split("#")[0], ...urls] });
+      await navigator.serviceWorker.register(import.meta.env.BASE_URL + "sw.js");
     } catch {
       // Offline support is a bonus; the app works without it.
     }
-  });
+  };
+  if (document.readyState === "complete") void register();
+  else addEventListener("load", register, { once: true });
 }
 
 /** True while the device has a network connection. */
@@ -42,7 +40,8 @@ export function useOfflineStatus(): OfflineStatus {
     let alive = true;
     const check = async () => {
       const reg = await navigator.serviceWorker.getRegistration();
-      const saved = reg?.active && (await caches.match("./"));
+      const indexUrl = new URL("index.html", new URL(import.meta.env.BASE_URL, location.href)).href;
+      const saved = reg?.active && (await caches.match(indexUrl));
       if (alive && saved) setStatus("ready");
     };
     void check();

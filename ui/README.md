@@ -47,8 +47,8 @@ Open http://localhost:5173.
   **Sensor health** (connection, battery and last sync for each suit sensor, with
   low-battery warnings and reconnect), and your level and streak.
 - **Guide**: the five hazards of spaceflight and how to measure each indicator.
-- **Offline mode**: the production build caches itself on the first visit, so the
-  tablet keeps working with no link to Earth. An "Offline" badge appears in the navbar
+- **Offline mode**: the production build saves every file (and the Inter font) on
+  the first visit, so the tablet keeps working with no link to Earth. An "Offline" badge appears in the navbar
   when the connection drops. Try it:
 
   ```bash
@@ -59,11 +59,23 @@ Open http://localhost:5173.
   Open http://localhost:4173 once, then stop the server (or go offline) and reload.
   The dev server (`npm run dev`) doesn't cache, on purpose.
 - **Settings** (gear in the navbar): mission environment (station, spacecraft,
-  rover, Moon or Mars base) and the animation switch.
+  rover, Moon or Mars base), the animation switch, and whether offline mode is ready.
 
 See [FEATURES.md](FEATURES.md) for how each feature maps to the challenge brief.
-Entries you log are kept in the browser's localStorage; use *Reset demo* on the
-Routine page to clear them.
+What you change in the demo (prevention plan ticks, water, messages to the flight
+surgeon, sensors you disconnect or reconnect, the environment) is kept in the
+browser's localStorage; use *Reset demo* on the Plan page to start over.
+
+## Put it online
+
+The build uses relative paths, so `ui/dist` works at any address.
+
+- **GitHub Pages**: `.github/workflows/pages.yml` builds and publishes the UI on
+  every push to main. A repo admin turns it on once: Settings → Pages → Source:
+  "GitHub Actions". (Pages on a private repo needs a paid GitHub plan; on a
+  public repo it's free.)
+- **Vercel**: import the repo, set Root Directory to `ui`, and keep the defaults
+  (build `npm run build`, output `dist`).
 
 ## Team data and rules
 
