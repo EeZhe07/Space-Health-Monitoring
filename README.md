@@ -2,6 +2,12 @@
 
 A crew-tablet and ground-review prototype for NASA Space Apps 2026. English interface built with React, TypeScript and Vite. All bundled crew data is synthetic.
 
+## Merged teammate UI
+
+The latest `ui/status-dashboard` branch (through `3261052`) is merged into this branch. It adds the separate visual demo under `ui/` plus shared resting-heart-rate history and rule files under `data/`. The root app retains crew profiles, daily checks, Signal Watch, IndexedDB/Supabase packets and Ground Review. The visual demo currently has its own localStorage state; merging the source does not connect those two state models.
+
+Run the visual demo independently with `npm ci --prefix ui`, `npm run build --prefix ui`, then `npm run preview --prefix ui -- --host 127.0.0.1 --port 4174 --strictPort`. Use port 4173 for the root app as described below. Validate the incoming demo using `npm run check --prefix ui`. With both previews running, `node scripts/check-ui-merge.cjs` checks the visual routes, narrow layout and offline reload.
+
 ## Run locally
 
 Requires Node.js 22.12+.

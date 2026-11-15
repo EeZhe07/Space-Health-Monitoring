@@ -1,0 +1,44 @@
+import { AnimatePresence, MotionConfig, motion } from "motion/react";
+import { useRoute } from "@/lib/router";
+import { Navbar } from "@/components/Navbar";
+import { Overview } from "@/views/Overview";
+import { BodyMap } from "@/views/BodyMap";
+import { Trends } from "@/views/Trends";
+import { LiveCheck } from "@/views/LiveCheck";
+import { Routine } from "@/views/Routine";
+import { Guide } from "@/views/Guide";
+import { SpaceScene } from "@/components/SpaceScene";
+import { useStore } from "@/lib/store";
+import { EmergencyScreen } from "@/components/Emergency";
+import { EnvToast } from "@/components/EnvToast";
+
+// The first page is the health status dashboard (no welcome page).
+const views = { home: Overview, overview: Overview, body: BodyMap, trends: Trends, live: LiveCheck, routine: Routine, guide: Guide };
+
+export default function App() {
+  const route = useRoute();
+  const { motionPref } = useStore();
+  const View = views[route];
+
+  return (
+    <MotionConfig reducedMotion={motionPref === "reduced" ? "always" : "never"}>
+      <div className="relative w-full min-h-screen">
+        <SpaceScene dim />
+        <Navbar route={route} />
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={route === "home" ? "overview" : route}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, transition: { duration: 0.08 } }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {View && <View />}
+          </motion.div>
+        </AnimatePresence>
+        <EnvToast />
+        <EmergencyScreen />
+      </div>
+    </MotionConfig>
+  );
+}
