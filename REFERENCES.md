@@ -1,7 +1,7 @@
 # References, NASA Data and AI Disclosure
 
 All crew data in this project is **synthetic**. No real astronaut data is used.
-Where a value is based on NASA or space agency material, it is listed below with what it was used for.
+Where a value or feature is based on NASA or space agency material, it is listed below with what it was used for.
 All other values are labelled **demo settings** (see `data/rules/thresholds.json`) and are not clinical guidance.
 
 ## NASA resources: heart-rate data and rules
@@ -25,23 +25,21 @@ All other values are labelled **demo settings** (see `data/rules/thresholds.json
 
 4. NASA Office of the Chief Health & Medical Officer. *NASA-STD-3001 Technical Brief: Design for Ionizing Radiation Protection* (OCHMO-TB-020).
    https://www.nasa.gov/wp-content/uploads/2023/03/radiation-protection-technical-brief-ochmo.pdf
-   **Used for:** typical ISS exposure of about 0.5 mSv per day, the basis for the radiation card's normal daily dose and the solar-event alert ("about three times a normal day").
+   **Used for:** the radiation card's statement that NASA limits career exposure to 600 mSv.
+   The brief's typical ISS exposure of about 0.5 mSv per day is consistent with the app's synthetic daily baseline (0.45 mSv), which is a demo setting.
 
-5. NASA NTRS 20250006168 (ASCEND paper, Simonsen et al.).
-   https://ntrs.nasa.gov/api/citations/20250006168/downloads/ASCEND%20Simonsen%20draft%201.pdf
-   **Used for:** ISS effective dose of about 0.2–0.5 mSv/day (supporting range for the radiation baseline).
+## NASA Human Research Program: Guide page
 
-## NASA Human Research Program: hazards and app design
-
-6. NASA HRP. *Five Hazards of Human Spaceflight.* https://www.nasa.gov/hrp/hazards/
+5. NASA HRP. *Five Hazards of Human Spaceflight.* https://www.nasa.gov/hrp/hazards/
    **Used for:** the Guide page's five hazards and which indicators to watch for each.
 
-7. NASA HRP hazard pages, used for the Guide text and features:
-   - Space radiation: https://www.nasa.gov/hrp/radiation/space-radiation-miniseries/
-   - Isolation and confinement: https://www.nasa.gov/hrp/hazard-isolation-and-confinement/ (sleep, mood, daily check-in)
-   - Distance from Earth: https://www.nasa.gov/hrp/hazard-distance-from-earth/ (crew must assess and act first; comms delay shown in the app)
-   - Gravity fields: https://www.nasa.gov/hrp/hazard-gravity-fields/ (fluid shift, heart, blood pressure)
-   - Hostile, closed environments: https://www.nasa.gov/hrp/hazard-hostile-closed-environments/ (temperature, immune stress)
+6. NASA HRP. *Risks of Human Spaceflight.* https://www.nasa.gov/hrp/risks/
+   **Used for:** background for choosing indicators (linked from the Guide page).
+
+7. NASA HRP. *Ongoing HRP Research in Space.* https://www.nasa.gov/hrp/ongoing-hrp-research/
+   **Used for:** background reading (linked from the Guide page).
+
+## NASA resources: attention task
 
 8. NASA TechPort project 23201 and the related ISS attention study (see the root README).
    https://techport.nasa.gov/projects/23201
@@ -57,6 +55,7 @@ All other values are labelled **demo settings** (see `data/rules/thresholds.json
 AI tools were used to help write code, documentation and synthetic-data scripts:
 - Claude Code: the `ui/` visual app
 - OpenAI Codex: the root crew and ground app
-- Claude: the synthetic data notebook and documentation
+- Claude: the synthetic data and documentation
 
 All AI output was reviewed and tested by the team (`npm run check` 7/7 and `npm test` 31/31 passing).
+
