@@ -176,7 +176,7 @@ export function IndicatorDetail({ id, compact = false }: { id: IndicatorId; comp
           <span className="basis-full text-xs text-white/50">
             {id === "heart_rate" && restingRef
               ? `Median of ${restingRef.n_used} resting readings, mission days ${restingRef.window_days[0]}-${restingRef.window_days[1]}`
-              : "From your NASA pre-flight medical exam"}
+              : "Synthetic demo baseline"}
           </span>
           {id === "heart_rate" && r && !fresh.unknown && (
             <span className="basis-full pt-1 text-sm text-white/85">{assessRestingValue(r.value, r.at)?.reason}</span>

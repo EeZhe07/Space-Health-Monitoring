@@ -16,8 +16,8 @@ Open http://localhost:5173.
 ## What's on screen
 
 - **Status (first page)**: opens straight onto the crew member's health status.
-  No welcome page and no setup: each person's pre-flight baseline comes from
-  NASA's medical exams, and in-mission readings stream in from suit sensors
+  No welcome page and no setup: each person has a synthetic demo baseline (NASA
+  is a reference, not a data source), and in-mission readings stream in from suit sensors
   (wrist sensor, arm cuff, glucose monitor, skin patch, sleep tracker,
   dosimeter). Every card shows its source and how it compares with the baseline.
 - **Inner pages** sit over an animated space scene drawn in code
