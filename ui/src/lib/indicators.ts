@@ -44,7 +44,7 @@ export interface Indicator {
   source: string;
   /** True when a suit sensor sends the reading; false when the crew member reports it. */
   auto: boolean;
-  /** Personal pre-flight baseline from the crew member's NASA medical exam (synthetic). */
+  /** Synthetic demo baseline (NASA used as a reference only, not real data). */
   baseline: { value: number; value2?: number };
 }
 

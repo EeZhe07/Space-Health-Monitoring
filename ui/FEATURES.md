@@ -6,7 +6,7 @@ threshold is an illustrative demo rule, not medical guidance.
 
 | Brief asks for | Where it lives |
 |---|---|
-| Gather health indicators (BP, heart rate, blood sugar, temperature, sleep, mood) | No manual entry: suit sensors stream every reading, compared with each crew member's NASA pre-flight baseline; mood is estimated from heart-rate variability and sleep. **Today's plan** shows what synced and flags any sensor that dropped out |
+| Gather health indicators (BP, heart rate, blood sugar, temperature, sleep, mood) | No manual entry: suit sensors stream every reading, compared with each crew member's synthetic demo baseline (NASA is used as a reference only); mood is estimated from heart-rate variability and sleep. **Today's plan** shows what synced and flags any sensor that dropped out |
 | Help astronauts assess their own health | **Status** (the first page): every indicator colour-coded (steady / watch / act) with a plain-language reading |
 | Guidance on treatments and health improvements | Each indicator's detail shows *What to do now* for its current status |
 | When a result needs attention, from patterns not single values | **Status → Patterns to watch**: alerts such as "blood pressure trending higher" or "sleep debt building", each with why it matters and what to do |
