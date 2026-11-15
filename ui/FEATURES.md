@@ -6,7 +6,7 @@ threshold is an illustrative demo rule, not medical guidance.
 
 | Brief asks for | Where it lives |
 |---|---|
-| Gather health indicators (BP, heart rate, blood sugar, temperature, sleep, mood) | No manual entry: suit sensors stream every reading, compared with each crew member's synthetic demo baseline (NASA is used as a reference only); mood is estimated from heart-rate variability and sleep. **Today's plan** shows what synced and flags any sensor that dropped out |
+| Gather health indicators (BP, heart rate, blood sugar, temperature, sleep, mood) | Nine indicators: the six asked for plus blood oxygen (SpO2), breathing rate and radiation dose. No manual entry: suit sensors stream every reading, compared with each crew member's synthetic demo baseline (NASA is used as a reference only); mood is estimated from heart-rate variability and sleep. **Today's plan** shows what synced and flags any sensor that dropped out |
 | Help astronauts assess their own health | **Status** (the first page): every indicator colour-coded (steady / watch / act) with a plain-language reading |
 | Guidance on treatments and health improvements | Each indicator's detail shows *What to do now* for its current status |
 | When a result needs attention, from patterns not single values | **Status → Patterns to watch**: alerts such as "blood pressure trending higher" or "sleep debt building", each with why it matters and what to do |
@@ -20,6 +20,7 @@ threshold is an illustrative demo rule, not medical guidance.
 | Actions that prevent a critical condition | **Daily check-in → Prevention plan**: exercise, sleep window, water, plus extra countermeasures added automatically from your patterns and environment |
 | Prompt measurements as part of the mission routine | Sensors measure on their own; **Plan → Sensor health** flags low batteries and dropped sensors before data goes missing |
 | Gamification | **Plan**: XP and level, and a streak for days the prevention plan is finished |
+| Works far from Earth | **Offline mode**: the app caches itself and keeps working with no connection; a navbar badge shows when the link is down |
 | Different environments (spacecraft, station, rover, Moon/Mars base) | Environment switcher in the navbar; changes comms delay, gravity and radiation dose rate |
 | Don't assume astronauts know how to assess themselves | Every indicator has short instructions and a "why" in place, not hidden in a manual |
 

@@ -99,7 +99,21 @@ function Stat({ icon: Icon, label, value }: { icon: typeof Globe2; label: string
         <Icon size={14} aria-hidden />
         {label}
       </div>
-      <div className="mt-0.5 font-semibold">{value}</div>
+      {/* Slides in and glows briefly when the mission environment changes. */}
+      <div className="relative mt-0.5 overflow-hidden">
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.div
+            key={value}
+            className="font-semibold"
+            initial={{ y: 14, opacity: 0, color: "#7fe0a8" }}
+            animate={{ y: 0, opacity: 1, color: "#ffffff" }}
+            exit={{ y: -14, opacity: 0 }}
+            transition={{ y: { type: "spring", stiffness: 420, damping: 30 }, opacity: { duration: 0.2 }, color: { duration: 1.6, ease: "easeOut" } }}
+          >
+            {value}
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

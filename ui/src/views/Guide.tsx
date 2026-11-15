@@ -10,7 +10,7 @@ const hazards = [
   { icon: Users, name: "Isolation and confinement", text: "Months with a small crew in a small space wear on sleep, mood and teamwork.", affects: ["mood", "sleep"] },
   { icon: Globe2, name: "Distance from Earth", text: "Help from the ground is minutes away, so the crew has to assess and act first.", affects: [] },
   { icon: Orbit, name: "Gravity fields", text: "Weightlessness and gravity changes shift fluids and weaken bones, muscles and the heart.", affects: ["heart_rate", "blood_pressure"] },
-  { icon: ShieldAlert, name: "Hostile, closed environment", text: "Recycled air, noise, CO₂ and microbes in a sealed cabin stress the immune system.", affects: ["temperature", "blood_sugar"] },
+  { icon: ShieldAlert, name: "Hostile, closed environment", text: "Recycled air, noise, CO₂ and microbes in a sealed cabin stress the immune system.", affects: ["spo2", "respiratory_rate", "temperature"] },
 ] as const;
 
 const resources = [

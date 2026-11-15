@@ -10,6 +10,7 @@ import { Guide } from "@/views/Guide";
 import { SpaceScene } from "@/components/SpaceScene";
 import { useStore } from "@/lib/store";
 import { EmergencyScreen } from "@/components/Emergency";
+import { EnvToast } from "@/components/EnvToast";
 
 // The first page is the health status dashboard (no welcome page).
 const views = { home: Overview, overview: Overview, body: BodyMap, trends: Trends, live: LiveCheck, routine: Routine, guide: Guide };
@@ -35,6 +36,7 @@ export default function App() {
             {View && <View />}
           </motion.div>
         </AnimatePresence>
+        <EnvToast />
         <EmergencyScreen />
       </div>
     </MotionConfig>

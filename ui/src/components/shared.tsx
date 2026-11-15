@@ -248,7 +248,7 @@ export function baselineDelta(id: IndicatorId, r: Reading | undefined) {
   const d = r.value - ind.baseline.value;
   if (Math.abs(d) < (ind.chart[1] - ind.chart[0]) * 0.015) return "At your baseline";
   const step = id === "temperature" || id === "sleep" ? d.toFixed(1) : String(Math.round(d));
-  return `${d > 0 ? "+" : ""}${step} ${ind.unit} vs baseline`;
+  return `${d > 0 ? "+" : ""}${step}${ind.unit === "%" ? "" : " "}${ind.unit} vs baseline`;
 }
 
 /** Indicator value that counts smoothly when it changes. */

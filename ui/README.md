@@ -18,8 +18,8 @@ Open http://localhost:5173.
 - **Status (first page)**: opens straight onto the crew member's health status.
   No welcome page and no setup: each person has a synthetic demo baseline (NASA
   is a reference, not a data source), and in-mission readings stream in from suit sensors
-  (wrist sensor, arm cuff, glucose monitor, skin patch, sleep tracker,
-  dosimeter). Every card shows its source and how it compares with the baseline.
+  (wrist sensor with pulse oximeter, chest strap, arm cuff, glucose monitor, skin
+  patch, sleep tracker, dosimeter). Every card shows its source and how it compares with the baseline.
 - **Inner pages** sit over an animated space scene drawn in code
   (`src/components/SpaceScene.tsx`) with a 3D starfield from React Bits
   Particles: it drifts in depth, shifts with the cursor and ripples on click.
@@ -28,8 +28,8 @@ Open http://localhost:5173.
   Titles reveal word by word and labels cross-fade. Animation is on by default;
   the pause button in the navbar (or "Reduce motion" in the mobile menu) turns
   it off and is remembered.
-- **Status**: all seven indicators (heart rate, blood pressure, blood
-  sugar, temperature, sleep, mood, radiation) colour-coded steady / watch / act,
+- **Status**: all nine indicators (heart rate, blood oxygen (SpO2), breathing
+  rate, blood pressure, blood sugar, temperature, sleep, mood, radiation) colour-coded steady / watch / act,
   with what to do now and a flight-surgeon message that shows the comms delay.
 - **Emergency button** (always in the navbar): one tap opens an instant
   emergency screen that alerts the crew, sends the latest vitals to the flight
@@ -47,6 +47,17 @@ Open http://localhost:5173.
   **Sensor health** (connection, battery and last sync for each suit sensor, with
   low-battery warnings and reconnect), and your level and streak.
 - **Guide**: the five hazards of spaceflight and how to measure each indicator.
+- **Offline mode**: the production build caches itself on the first visit, so the
+  tablet keeps working with no link to Earth. An "Offline" badge appears in the navbar
+  when the connection drops. Try it:
+
+  ```bash
+  npm run build
+  npm run preview
+  ```
+
+  Open http://localhost:4173 once, then stop the server (or go offline) and reload.
+  The dev server (`npm run dev`) doesn't cache, on purpose.
 - **Settings** (gear in the navbar): mission environment (station, spacecraft,
   rover, Moon or Mars base) and the animation switch.
 

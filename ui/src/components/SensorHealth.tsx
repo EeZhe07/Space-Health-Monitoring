@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils";
 
 // The suit sensors behind every reading. Battery levels are synthetic for the demo.
 const sensors: { id: IndicatorId; name: string; battery: number; feeds: string }[] = [
-  { id: "heart_rate", name: "Wrist sensor", battery: 82, feeds: "Heart rate, mood estimate" },
+  { id: "heart_rate", name: "Wrist sensor", battery: 82, feeds: "Heart rate, blood oxygen, mood estimate" },
+  { id: "respiratory_rate", name: "Chest strap", battery: 58, feeds: "Breathing rate" },
   { id: "blood_pressure", name: "Arm cuff", battery: 64, feeds: "Blood pressure" },
   { id: "blood_sugar", name: "Glucose monitor", battery: 41, feeds: "Blood sugar" },
   { id: "temperature", name: "Skin patch", battery: 17, feeds: "Body temperature" },
