@@ -54,7 +54,6 @@ All other values are labelled **demo settings** (see `data/rules/thresholds.json
 
 AI tools were used to help write code, documentation and synthetic-data scripts:
 - Claude Code: the `ui/` visual app
-- OpenAI Codex: the root crew and ground app
 - Claude: the synthetic data and documentation
 
 All AI output was reviewed and tested by the team (`npm run check` 7/7 and `npm test` 31/31 passing).
