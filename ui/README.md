@@ -13,6 +13,16 @@ npm run dev
 
 Open http://localhost:5173.
 
+When running alongside the root crew/ground app, use a separate preview port:
+`npm run preview -- --host 127.0.0.1 --port 4174 --strictPort`.
+This visual demo has independent localStorage state. Crew profiles, daily
+self-checks, Signal Watch and Supabase Ground Review currently run in the
+root app; their state has not been connected to this interface.
+
+The production build now generates a versioned offline precache of its
+HTML, JavaScript and CSS before activation. Its cache namespace is separate
+from the root app, and preview-server Vary headers do not prevent offline hits.
+
 ## What's on screen
 
 - **Status (first page)**: opens straight onto the crew member's health status.
