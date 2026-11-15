@@ -18,6 +18,7 @@ concurrency:
 
 jobs:
   build:
+    if: ${{ github.event.repository.has_pages == true }}
     runs-on: ubuntu-latest
     defaults:
       run:
