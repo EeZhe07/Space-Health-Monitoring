@@ -108,3 +108,9 @@ The main browser check covers symptom entry, manual measurements, acknowledgemen
 The chart check covers pointer and touch inspection, range and step controls, all seven indicator charts, exact timestamps, selection reset, replay rewind, empty charts, clock isolation and phone overflow.
 
 Product and visual decisions are in `PRODUCT.md` and `DESIGN.md`. Research references are available inside the application. Implementation, documentation and checks were prepared with AI assistance.
+
+## License
+
+Copyright © 2026 Crew Health contributors.
+
+The original Crew Health code and documentation are licensed under the [Apache License 2.0](LICENSE). Third-party material retains its own terms. The bundled [React Bits Particles component](ui/src/components/Particles/) by David Haz is covered by its [MIT + Commons Clause license](ui/src/components/Particles/LICENSE.md).
